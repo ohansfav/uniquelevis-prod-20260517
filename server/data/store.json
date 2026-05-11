@@ -1,0 +1,443 @@
+{
+  "users": [
+    {
+      "id": "u-admin",
+      "email": "admin@uniquelevis.com",
+      "passwordHash": "$2a$10$lKimuvT/hhGZm2B13OvVYOe4ilCztFVjNJl1IDTCvVRSGYa/GHN.K",
+      "firstName": "Admin",
+      "age": 30,
+      "city": "Lagos",
+      "bio": "App Administrator",
+      "interests": [],
+      "photos": [],
+      "isAdmin": true,
+      "membershipTier": "diamond",
+      "verified": true,
+      "verificationStatus": "approved"
+    },
+    {
+      "id": "u-100",
+      "email": "ava@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Ava",
+      "membershipTier": "gold",
+      "verified": true,
+      "verificationStatus": "approved",
+      "age": 24,
+      "city": "Lagos Island",
+      "bio": "Architect by day, foodie by night. I love deep talks and long drives.",
+      "interests": [
+        "Travel",
+        "Live Music",
+        "Photography",
+        "Art"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
+        "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80"
+      ]
+    },
+    {
+      "id": "u-101",
+      "email": "mila@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Mila",
+      "age": 27,
+      "city": "Abuja",
+      "membershipTier": "diamond",
+      "verified": true,
+      "verificationStatus": "approved",
+      "bio": "Startup builder, gym regular, and sunset chaser.",
+      "interests": [
+        "Fitness",
+        "Business",
+        "Art"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=900&q=80",
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
+      ]
+    },
+    {
+      "id": "u-102",
+      "email": "noah@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Noah",
+      "age": 29,
+      "city": "Port Harcourt",
+      "bio": "Product designer, coffee snob, and beach volleyball addict.",
+      "interests": [
+        "Design",
+        "Coffee",
+        "Beach"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-103",
+      "email": "zainab@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Zainab",
+      "age": 26,
+      "city": "Kano",
+      "bio": "Book lover, entrepreneur, and lover of spontaneous weekend trips.",
+      "interests": [
+        "Books",
+        "Food",
+        "Travel"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1542204625-de293a06df02?w=900&q=80",
+        "https://images.unsplash.com/photo-1546961329-78bef0414d7c?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-104",
+      "email": "ifeanyi@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Ifeanyi",
+      "age": 30,
+      "city": "Enugu",
+      "bio": "Creative director who enjoys hikes, local art scenes, and deep conversations.",
+      "interests": [
+        "Hiking",
+        "Art",
+        "Film"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1521119989659-a83eee488004?w=900&q=80",
+        "https://images.unsplash.com/photo-1463453091185-61582044d556?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-105",
+      "email": "chioma@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Chioma",
+      "age": 25,
+      "city": "Owerri",
+      "bio": "Chef in progress, lover of laughs, rain playlists, and late-night chats.",
+      "interests": [
+        "Cooking",
+        "Music",
+        "Comedy"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&q=80",
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-106",
+      "email": "temi@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Temi",
+      "age": 28,
+      "city": "Ibadan",
+      "bio": "Civil engineer, football fan, and soft-life advocate with weekend road-trip energy.",
+      "interests": [
+        "Football",
+        "Road Trips",
+        "Tech"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=900&q=80",
+        "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-107",
+      "email": "amara@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Amara",
+      "age": 27,
+      "city": "Uyo",
+      "bio": "Product manager who loves beach sunsets, podcasts, and trying new restaurants.",
+      "interests": [
+        "Podcasts",
+        "Beach",
+        "Brunch"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-108",
+      "email": "wale@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Wale",
+      "age": 31,
+      "city": "Abeokuta",
+      "bio": "Photographer and storyteller. Always chasing sunrise and good coffee.",
+      "interests": [
+        "Photography",
+        "Coffee",
+        "Nature"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=80",
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-109",
+      "email": "bola@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Bola",
+      "age": 24,
+      "city": "Jos",
+      "bio": "Tech analyst, dance class regular, and believer in kind-hearted love.",
+      "interests": [
+        "Dance",
+        "Tech",
+        "Movies"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
+        "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-110",
+      "email": "sophia@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Sophia",
+      "age": 28,
+      "city": "London",
+      "bio": "Art curator, city explorer, and fan of long conversations over coffee.",
+      "interests": [
+        "Art",
+        "Museums",
+        "Coffee"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900&q=80",
+        "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-111",
+      "email": "diego@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Diego",
+      "age": 30,
+      "city": "Madrid",
+      "bio": "Food lover and weekend cyclist. Looking for good energy and real chemistry.",
+      "interests": [
+        "Cycling",
+        "Food",
+        "Travel"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-112",
+      "email": "mei@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Mei",
+      "age": 26,
+      "city": "Singapore",
+      "bio": "UI designer, tea enthusiast, and always planning my next getaway.",
+      "interests": [
+        "Design",
+        "Tea",
+        "Travel"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&q=80",
+        "https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-113",
+      "email": "liam@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Liam",
+      "age": 32,
+      "city": "Toronto",
+      "bio": "Engineer by day, live music hunter by night, and always up for great banter.",
+      "interests": [
+        "Live Music",
+        "Tech",
+        "Skiing"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=900&q=80",
+        "https://images.unsplash.com/photo-1463453091185-61582044d556?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-114",
+      "email": "anika@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Anika",
+      "age": 27,
+      "city": "Mumbai",
+      "bio": "Marketer, dancer, and hopeless romantic with a soft spot for beach sunsets.",
+      "interests": [
+        "Dance",
+        "Beach",
+        "Reading"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&q=80",
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-115",
+      "email": "leandro@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Leandro",
+      "age": 29,
+      "city": "Sao Paulo",
+      "bio": "Startup founder, football fan, and lover of spontaneous adventures.",
+      "interests": [
+        "Football",
+        "Startups",
+        "Travel"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=900&q=80",
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-116",
+      "email": "hana@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Hana",
+      "age": 25,
+      "city": "Tokyo",
+      "bio": "Photographer, ramen explorer, and fan of cozy rainy evenings.",
+      "interests": [
+        "Photography",
+        "Food",
+        "Anime"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1506863530036-1efeddceb993?w=900&q=80",
+        "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-117",
+      "email": "amal@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Amal",
+      "age": 31,
+      "city": "Dubai",
+      "bio": "Finance professional, desert-roadtrip lover, and always down for deep talks.",
+      "interests": [
+        "Business",
+        "Road Trips",
+        "Fitness"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1542204625-de293a06df02?w=900&q=80",
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-118",
+      "email": "emma@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Emma",
+      "age": 29,
+      "city": "Sydney",
+      "bio": "Surfer, product lead, and believer in laughter-first dates.",
+      "interests": [
+        "Surfing",
+        "Product",
+        "Outdoors"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80",
+        "https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    },
+    {
+      "id": "u-119",
+      "email": "kofi@example.com",
+      "passwordHash": "$2a$10$KazGZMos0rR2O/ltVulAZuhCIe9wU1MBqHLUw5u9lc6XN9zh3bxV2",
+      "firstName": "Kofi",
+      "age": 30,
+      "city": "Accra",
+      "bio": "Music producer, weekend chef, and fan of warm-hearted people.",
+      "interests": [
+        "Music",
+        "Cooking",
+        "Culture"
+      ],
+      "photos": [
+        "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=900&q=80",
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=900&q=80"
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
+    }
+  ],
+  "likes": [],
+  "matches": [],
+  "messages": [],
+  "refreshSessions": []
+}
