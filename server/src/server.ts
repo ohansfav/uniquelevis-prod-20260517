@@ -12,6 +12,7 @@ import { healthRouter } from "./routes/health.js";
 import { matchesRouter } from "./routes/matches.js";
 import { messagesRouter } from "./routes/messages.js";
 import { profilesRouter } from "./routes/profiles.js";
+import { billingRouter } from "./routes/billing.js";
 
 const app = express();
 initStore();
@@ -35,6 +36,7 @@ app.use("/api", profilesRouter);
 app.use("/api", discoverRouter);
 app.use("/api", matchesRouter);
 app.use("/api", messagesRouter);
+app.use("/api", billingRouter);
 app.use("/api", adminRouter);
 
 app.use(errorHandler);

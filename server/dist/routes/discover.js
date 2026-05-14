@@ -35,6 +35,14 @@ const DATE_IDEAS = [
     "Cooking challenge date",
 ];
 const normalize = (value) => value.trim().toLowerCase();
+const shuffle = (items) => {
+    const next = [...items];
+    for (let i = next.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+    }
+    return next;
+};
 const pickDateIdea = (sharedInterests) => {
     const lower = sharedInterests.map(normalize);
     if (lower.some((i) => ["music", "live music"].includes(i)))
@@ -87,6 +95,163 @@ const scoreCandidate = (me, candidate) => {
         distanceLabel,
     };
 };
+const parseAgeRange = (raw) => {
+    const match = raw.trim().match(/^(\d{1,2})\s*[-:]\s*(\d{1,2})$/);
+    if (!match)
+        return null;
+    const min = Number(match[1]);
+    const max = Number(match[2]);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min < 18 || max > 99 || min > max) {
+        return null;
+    }
+    return { min, max };
+};
+const buildModeReasons = (card, options) => {
+    const reasons = [];
+    if (options.mode === "nearby") {
+        reasons.push(card.distanceLabel === "Same city" ? "Nearby now" : "Close to your region");
+    }
+    else if (options.mode === "passport") {
+        reasons.push("Passport pick");
+    }
+    else if (options.mode === "boost") {
+        reasons.push("Boost priority");
+    }
+    else {
+        reasons.push("For you today");
+    }
+    if (card.compatibilityBand === "Top Pick") {
+        reasons.push("Top chemistry");
+    }
+    else if (card.compatibilityBand === "Great Match") {
+        reasons.push("Strong compatibility");
+    }
+    if (card.verified) {
+        reasons.push("Verified profile");
+    }
+    if (options.verifiedOnly) {
+        reasons.push("Trusted only");
+    }
+    if (options.intent === "serious") {
+        reasons.push("Intent aligned: serious");
+    }
+    else if (options.intent === "casual") {
+        reasons.push("Intent aligned: casual");
+    }
+    if (card.distanceLabel === "Global connection" && options.mode === "passport") {
+        reasons.push("Global connection");
+    }
+    return reasons.slice(0, 3);
+};
+const applyDiscoverFilters = (cards, query) => {
+    let next = [...cards];
+    const verifiedOnly = String(query.verifiedOnly ?? "false").toLowerCase() === "true";
+    if (verifiedOnly) {
+        next = next.filter((card) => Boolean(card.verified));
+    }
+    if (typeof query.ageRange === "string") {
+        const parsed = parseAgeRange(query.ageRange);
+        if (parsed) {
+            next = next.filter((card) => card.age >= parsed.min && card.age <= parsed.max);
+        }
+    }
+    if (typeof query.distance === "string") {
+        const distance = query.distance.trim().toLowerCase();
+        if (distance.includes("1") || distance.includes("5")) {
+            next = next.filter((card) => card.distanceLabel === "Same city");
+        }
+        else if (distance.includes("10")) {
+            next = next.filter((card) => card.distanceLabel === "Same city" || card.distanceLabel === "Same region");
+        }
+        else if (distance.includes("passport")) {
+            next = next.filter((card) => card.distanceLabel === "Global connection");
+        }
+    }
+    if (typeof query.intent === "string") {
+        const intent = query.intent.trim().toLowerCase();
+        if (intent === "serious") {
+            next = next.filter((card) => card.matchScore >= 70);
+        }
+        else if (intent === "casual") {
+            next = next.filter((card) => card.matchScore < 70);
+        }
+        else if (intent === "long-term") {
+            next = next.filter((card) => card.matchScore >= 80 || Boolean(card.verified));
+        }
+    }
+    if (typeof query.mode === "string") {
+        const mode = query.mode.trim().toLowerCase();
+        if (mode === "nearby") {
+            next = next.filter((card) => card.distanceLabel === "Same city" || card.distanceLabel === "Same region");
+        }
+        else if (mode === "passport") {
+            next = next.filter((card) => card.distanceLabel === "Global connection");
+        }
+        else if (mode === "boost") {
+            const boosted = next.filter((card) => card.matchScore >= 65);
+            if (boosted.length > 0) {
+                next = boosted;
+            }
+            else {
+                const fallbackSize = Math.max(6, Math.ceil(next.length * 0.35));
+                next = [...next].sort((a, b) => b.matchScore - a.matchScore).slice(0, fallbackSize);
+            }
+        }
+    }
+    return next;
+};
+const scoreByMode = (card, mode, intent, verifiedOnly) => {
+    const distanceBoost = card.distanceLabel === "Same city"
+        ? 10
+        : card.distanceLabel === "Same region"
+            ? 5
+            : 0;
+    const globalBoost = card.distanceLabel === "Global connection" ? 12 : 0;
+    const verifiedBoost = card.verified ? 8 : 0;
+    const bandBoost = card.compatibilityBand === "Top Pick" ? 8 : card.compatibilityBand === "Great Match" ? 4 : 0;
+    let modeScore = card.matchScore;
+    if (mode === "nearby") {
+        modeScore += distanceBoost * 2;
+        modeScore += card.matchScore >= 80 ? 5 : 0;
+    }
+    else if (mode === "passport") {
+        modeScore += globalBoost * 2;
+        modeScore -= distanceBoost;
+    }
+    else if (mode === "boost") {
+        modeScore += verifiedBoost + bandBoost + 10;
+    }
+    else {
+        modeScore += distanceBoost + bandBoost;
+    }
+    if (intent === "serious") {
+        modeScore += card.matchScore >= 70 ? 8 : -6;
+    }
+    else if (intent === "casual") {
+        modeScore += card.matchScore < 70 ? 8 : -4;
+    }
+    else if (intent === "long-term") {
+        modeScore += card.matchScore >= 80 ? 10 : -8;
+        modeScore += card.verified ? 6 : 0;
+    }
+    if (verifiedOnly) {
+        modeScore += card.verified ? 5 : -20;
+    }
+    const ageCenterPenalty = Math.abs(card.age - 27);
+    modeScore -= Math.min(8, Math.floor(ageCenterPenalty / 4));
+    const jitter = Math.floor(Math.random() * 4);
+    return modeScore + jitter;
+};
+const rankDiscoverCards = (cards, query) => {
+    const mode = query.mode?.trim().toLowerCase() ?? "for-you";
+    const intent = query.intent?.trim().toLowerCase() ?? "all";
+    const verifiedOnly = String(query.verifiedOnly ?? "false").toLowerCase() === "true";
+    return [...cards].sort((a, b) => {
+        const scoreA = scoreByMode(a, mode, intent, verifiedOnly);
+        const scoreB = scoreByMode(b, mode, intent, verifiedOnly);
+        return scoreB - scoreA;
+    });
+};
 discoverRouter.get("/discover", requireAuth, (req, res) => {
     const authUserId = req.authUserId;
     const me = findUserById(authUserId);
@@ -94,15 +259,20 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
         res.status(404).json({ message: "Authenticated user not found" });
         return;
     }
-    const excluded = new Set(likes
-        .filter((i) => i.byUserId === authUserId)
-        .map((i) => i.targetUserId));
+    const recycleDeck = typeof req.query.recycle === "string" && req.query.recycle.trim().toLowerCase() === "true";
+    const excluded = recycleDeck
+        ? new Set()
+        : new Set(likes
+            .filter((i) => i.byUserId === authUserId)
+            .map((i) => i.targetUserId));
     const cards = users
         .filter((u) => u.id !== authUserId && !excluded.has(u.id))
         .map((candidate) => {
         const scored = scoreCandidate(me, candidate);
+        const base = publicUser(candidate);
         return {
-            ...publicUser(candidate),
+            ...base,
+            photos: shuffle(base.photos),
             matchScore: scored.score,
             compatibilityBand: scored.compatibilityBand,
             aiReasons: scored.reasons,
@@ -110,9 +280,33 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
             distanceLabel: scored.distanceLabel,
         };
     })
-        .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 20);
-    res.json({ cards });
+        .sort((a, b) => b.matchScore - a.matchScore);
+    const filteredCards = applyDiscoverFilters(cards, {
+        mode: typeof req.query.mode === "string" ? req.query.mode : undefined,
+        distance: typeof req.query.distance === "string" ? req.query.distance : undefined,
+        ageRange: typeof req.query.ageRange === "string" ? req.query.ageRange : undefined,
+        intent: typeof req.query.intent === "string" ? req.query.intent : undefined,
+        verifiedOnly: typeof req.query.verifiedOnly === "string" ? req.query.verifiedOnly : undefined,
+    });
+    // Do not dead-end discover when filters are too strict.
+    const cardsForRanking = filteredCards.length > 0 ? filteredCards : cards;
+    const rankedCards = rankDiscoverCards(cardsForRanking, {
+        mode: typeof req.query.mode === "string" ? req.query.mode : undefined,
+        intent: typeof req.query.intent === "string" ? req.query.intent : undefined,
+        verifiedOnly: typeof req.query.verifiedOnly === "string" ? req.query.verifiedOnly : undefined,
+    }).slice(0, 20);
+    const queryMode = typeof req.query.mode === "string" ? req.query.mode.trim().toLowerCase() : "for-you";
+    const queryIntent = typeof req.query.intent === "string" ? req.query.intent.trim().toLowerCase() : "all";
+    const queryVerifiedOnly = typeof req.query.verifiedOnly === "string" && req.query.verifiedOnly.trim().toLowerCase() === "true";
+    const responseCards = rankedCards.map((card) => ({
+        ...card,
+        modeReasons: buildModeReasons(card, {
+            mode: queryMode,
+            intent: queryIntent,
+            verifiedOnly: queryVerifiedOnly,
+        }),
+    }));
+    res.json({ cards: responseCards });
 });
 const swipeSchema = z.object({
     targetUserId: z.string().min(1),
@@ -133,6 +327,14 @@ discoverRouter.post("/interactions/swipe", requireAuth, (req, res) => {
     createLike(me, parsed.data.targetUserId, parsed.data.type);
     let match = null;
     if (parsed.data.type === "like" || parsed.data.type === "super_like") {
+        const existingMutual = findMutualLike(me, parsed.data.targetUserId);
+        if (!existingMutual) {
+            // Demo-friendly behavior: some profiles like back so users can experience matching/chat.
+            const shouldLikeBack = parsed.data.type === "super_like" || Math.random() < 0.4;
+            if (shouldLikeBack) {
+                createLike(parsed.data.targetUserId, me, "like");
+            }
+        }
         const mutual = findMutualLike(me, parsed.data.targetUserId);
         if (mutual) {
             match = createMatchIfNeeded(me, parsed.data.targetUserId);

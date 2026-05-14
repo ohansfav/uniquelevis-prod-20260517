@@ -9,6 +9,8 @@ export type PublicUser = {
   bio: string;
   interests: string[];
   photos: string[];
+  gender?: "man" | "woman" | "other";
+  lookingFor?: "men" | "women" | "everyone";
   membershipTier?: MembershipTier;
   verified?: boolean;
   verificationStatus?: VerificationStatus;
@@ -20,6 +22,7 @@ export type DiscoverCard = PublicUser & {
   aiReasons: string[];
   dateIdea: string;
   distanceLabel: string;
+  modeReasons?: string[];
 };
 
 export type AuthResponse = {

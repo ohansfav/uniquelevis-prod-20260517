@@ -1,21 +1,23 @@
-type MobileTab = "discover" | "matches" | "messages" | "profile";
+type MobileTab = "swipe" | "explore" | "likes" | "chat" | "profile";
 
 type Props = {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
+  likesCount: number;
 };
 
 const tabs: Array<{ id: MobileTab; label: string; icon: string }> = [
-  { id: "discover", label: "Discover", icon: "🔥" },
-  { id: "matches", label: "Matches", icon: "💘" },
-  { id: "messages", label: "Chats", icon: "💬" },
-  { id: "profile", label: "Profile", icon: "✨" },
+  { id: "swipe", label: "Swipe", icon: "🔥" },
+  { id: "explore", label: "Explore", icon: "🧭" },
+  { id: "likes", label: "Likes", icon: "💘" },
+  { id: "chat", label: "Chat", icon: "💬" },
+  { id: "profile", label: "Profile", icon: "👤" },
 ];
 
-export default function BottomNav({ activeTab, onTabChange }: Props) {
+export default function BottomNav({ activeTab, onTabChange, likesCount }: Props) {
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-white/50 bg-white/85 p-2 shadow-[0_18px_36px_rgba(27,23,48,0.2)] backdrop-blur md:hidden">
-      <ul className="grid grid-cols-4 gap-1">
+    <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_90%,transparent)] p-2 shadow-[0_18px_36px_rgba(27,23,48,0.2)] backdrop-blur md:hidden">
+      <ul className="grid grid-cols-5 gap-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -29,6 +31,11 @@ export default function BottomNav({ activeTab, onTabChange }: Props) {
                 }`}
               >
                 <span className="text-base leading-none">{tab.icon}</span>
+                {tab.id === "likes" && (
+                  <span className="-mt-1 mb-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f2cb4d] px-1 text-[9px] font-bold text-[#2b1d0f]">
+                    {likesCount}
+                  </span>
+                )}
                 <span className="mt-1 leading-none">{tab.label}</span>
               </button>
             </li>

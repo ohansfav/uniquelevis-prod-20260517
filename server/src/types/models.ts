@@ -9,6 +9,8 @@ export type PublicUser = {
   bio: string;
   interests: string[];
   photos: string[];
+  gender?: "man" | "woman" | "other";
+  lookingFor?: "men" | "women" | "everyone";
   membershipTier?: MembershipTier;
   verified?: boolean;
   verificationStatus?: VerificationStatus;

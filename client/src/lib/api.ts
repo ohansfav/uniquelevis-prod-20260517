@@ -14,14 +14,88 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
-export const login = async (email: string, password: string) => {
+export type DiscoverQueryFilters = {
+  mode?: "for-you" | "nearby" | "passport" | "boost";
+  distance?: string;
+  ageRange?: string;
+  intent?: "Serious" | "Casual" | "Open" | "All" | "Long-term";
+  verifiedOnly?: boolean;
+  recycle?: boolean;
+};
+
+export type HumanCheckChallenge = {
+  challengeId: string;
+  prompt: string;
+};
+
+const readResponseDetails = async (res: Response) => {
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const payload = (await res.json().catch(() => null)) as { message?: unknown } | null;
+    return typeof payload?.message === "string" ? payload.message.trim() : "";
+  }
+
+  return (await res.text().catch(() => "")).trim();
+};
+
+const readErrorMessage = async (res: Response, fallback: string) => {
+  const details = await readResponseDetails(res);
+
+  if (res.status >= 500) {
+    return `${fallback}. We hit a temporary server issue. Please try again in a moment.`;
+  }
+
+  if (res.status === 401 && /invalid credentials/i.test(details)) {
+    return "Incorrect email or password. Check your details and try again.";
+  }
+
+  if (res.status === 403 && /human verification/i.test(details)) {
+    return details;
+  }
+
+  if (details) {
+    return details;
+  }
+
+  if (res.status === 429) {
+    return "Too many attempts. Please wait a moment before trying again.";
+  }
+
+  if (res.status === 404) {
+    return `${fallback}. The service could not be reached right now.`;
+  }
+
+  return `${fallback}. Please try again.`;
+};
+
+export const getHumanCheckChallenge = async () => {
+  const res = await fetch(`${API_BASE}/auth/human-check`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load human verification"));
+  }
+  return (await res.json()) as HumanCheckChallenge;
+};
+
+export const login = async (
+  email: string,
+  password: string,
+  verification?: { challengeId: string; challengeAnswer: string },
+) => {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({
+      email,
+      password,
+      challengeId: verification?.challengeId,
+      challengeAnswer: verification?.challengeAnswer,
+    }),
   });
   if (!res.ok) {
-    throw new Error("Login failed");
+    throw new Error(await readErrorMessage(res, "Login failed"));
   }
   return (await res.json()) as AuthResponse;
 };
@@ -56,13 +130,22 @@ export const adminLogin = async (email: string, password: string) => {
   return (await res.json()) as AuthResponse;
 };
 
-export const getDiscoverCards = async (token: string) => {
-  const res = await fetch(`${API_BASE}/discover`, {
+export const getDiscoverCards = async (token: string, filters: DiscoverQueryFilters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.mode) params.set("mode", filters.mode);
+  if (filters.distance) params.set("distance", filters.distance);
+  if (filters.ageRange) params.set("ageRange", filters.ageRange);
+  if (filters.intent) params.set("intent", filters.intent);
+  if (typeof filters.verifiedOnly === "boolean") params.set("verifiedOnly", String(filters.verifiedOnly));
+  if (typeof filters.recycle === "boolean") params.set("recycle", String(filters.recycle));
+
+  const query = params.toString();
+  const res = await fetch(`${API_BASE}/discover${query ? `?${query}` : ""}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error("Failed to fetch profiles");
+    throw new Error(await readErrorMessage(res, "Failed to fetch profiles"));
   }
   const data = (await res.json()) as { cards: DiscoverCard[] };
   return data.cards;
@@ -95,7 +178,7 @@ export const getMatches = async (token: string) => {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error("Failed to fetch matches");
+    throw new Error(await readErrorMessage(res, "Failed to fetch matches"));
   }
   const data = (await res.json()) as { matches: MatchItem[] };
   return data.matches;
@@ -129,7 +212,7 @@ export const getMyProfile = async (token: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    throw new Error("Failed to get profile");
+    throw new Error(await readErrorMessage(res, "Failed to get profile"));
   }
   const data = (await res.json()) as { profile: PublicUser };
   return data.profile;
@@ -137,7 +220,7 @@ export const getMyProfile = async (token: string) => {
 
 export const updateMyProfile = async (
   token: string,
-  payload: Partial<Pick<PublicUser, "firstName" | "age" | "city" | "bio" | "interests" | "photos">>,
+  payload: Partial<Pick<PublicUser, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor">>,
 ) => {
   const res = await fetch(`${API_BASE}/profiles/me`, {
     method: "PUT",
@@ -174,7 +257,7 @@ export const getMyVerificationStatus = async (token: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    throw new Error("Failed to get verification status");
+    throw new Error(await readErrorMessage(res, "Failed to get verification status"));
   }
   return (await res.json()) as { verificationStatus: VerificationStatus; verified: boolean };
 };
@@ -184,7 +267,7 @@ export const getMessages = async (token: string, matchId: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    throw new Error("Failed to fetch messages");
+    throw new Error(await readErrorMessage(res, "Failed to fetch messages"));
   }
   const data = (await res.json()) as { messages: MessageItem[] };
   return data.messages;
@@ -200,21 +283,24 @@ export const sendMessage = async (token: string, matchId: string, text: string) 
     body: JSON.stringify({ text }),
   });
   if (!res.ok) {
-    throw new Error("Failed to send message");
+    throw new Error(await readErrorMessage(res, "Failed to send message"));
   }
   const data = (await res.json()) as { message: MessageItem };
   return data.message;
 };
 
 export const markMessagesRead = async (token: string, matchId: string) => {
-  await fetch(`${API_BASE}/messages/${matchId}/read`, {
+  const res = await fetch(`${API_BASE}/messages/${matchId}/read`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to mark messages read"));
+  }
 };
 
 export const sendTyping = async (token: string, matchId: string, isTyping: boolean) => {
-  await fetch(`${API_BASE}/messages/${matchId}/typing`, {
+  const res = await fetch(`${API_BASE}/messages/${matchId}/typing`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -222,12 +308,16 @@ export const sendTyping = async (token: string, matchId: string, isTyping: boole
     },
     body: JSON.stringify({ isTyping }),
   });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to send typing event"));
+  }
 };
 
 export const openMessageStream = (
   token: string,
   onMessage: (payload: { matchId: string; message: MessageItem; from: string }) => void,
   onTyping?: (payload: TypingEventPayload) => void,
+  onError?: () => void,
 ) => {
   const source = new EventSource(`${API_BASE}/messages/stream?token=${encodeURIComponent(token)}`);
   source.addEventListener("message", (event) => {
@@ -239,7 +329,32 @@ export const openMessageStream = (
     const parsed = JSON.parse(event.data) as TypingEventPayload;
     onTyping(parsed);
   });
+  source.addEventListener("error", () => {
+    if (onError) onError();
+  });
   return source;
+};
+
+export const createUpgradeCheckout = async (
+  token: string,
+  plan: "silver" | "gold" | "diamond",
+) => {
+  const res = await fetch(`${API_BASE}/billing/checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      plan,
+      successPath: "/?upgrade=success",
+      cancelPath: "/?upgrade=cancelled",
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Unable to start checkout"));
+  }
+  return (await res.json()) as { ok: boolean; checkoutUrl: string | null; sessionId: string };
 };
 
 export const getAdminStats = async (token: string) => {

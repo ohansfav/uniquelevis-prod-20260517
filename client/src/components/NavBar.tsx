@@ -32,7 +32,7 @@ export default function NavBar({ isAuthenticated, onLogout }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/50 bg-white/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_82%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-3 py-3 md:px-6">
         <div className="flex items-center gap-2 md:gap-3">
           <button
@@ -50,9 +50,11 @@ export default function NavBar({ isAuthenticated, onLogout }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => router.back()} className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
-            Back
-          </button>
+          {!isAuthenticated && (
+            <button onClick={() => router.back()} className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
+              Back
+            </button>
+          )}
 
           {isAuthenticated && (
             <a

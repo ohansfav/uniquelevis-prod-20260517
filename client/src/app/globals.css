@@ -7,9 +7,29 @@
   --color-accent-2: #ff8e53;
   --color-bg: #f7f5f3;
   --color-surface: #fff7f8;
+  --color-surface-elevated: #ffffff;
   --color-text: #1b1730;
   --color-text-muted: #6a657e;
   --color-border: #eadfe5;
+  --app-glow-1: rgba(255, 79, 122, 0.18);
+  --app-glow-2: rgba(255, 142, 83, 0.16);
+  --app-glow-3: rgba(120, 101, 183, 0.08);
+}
+
+html[data-theme="dark"] {
+  --color-primary: #f4f2ff;
+  --color-primary-2: #cec6ff;
+  --color-accent: #ff4f7a;
+  --color-accent-2: #ff8e53;
+  --color-bg: #090d17;
+  --color-surface: #10182a;
+  --color-surface-elevated: #0e1526;
+  --color-text: #ecf1ff;
+  --color-text-muted: #97a4bd;
+  --color-border: #22314d;
+  --app-glow-1: rgba(255, 79, 122, 0.14);
+  --app-glow-2: rgba(255, 142, 83, 0.08);
+  --app-glow-3: rgba(92, 120, 190, 0.12);
 }
 
 html {
@@ -26,9 +46,9 @@ html {
 
 body {
   background:
-    radial-gradient(circle at 10% 10%, rgba(255, 79, 122, 0.18) 0, rgba(255, 79, 122, 0) 36%),
-    radial-gradient(circle at 85% 15%, rgba(255, 142, 83, 0.16) 0, rgba(255, 142, 83, 0) 34%),
-    radial-gradient(circle at 45% 95%, rgba(120, 101, 183, 0.08) 0, rgba(120, 101, 183, 0) 45%),
+    radial-gradient(circle at 10% 10%, var(--app-glow-1) 0, rgba(255, 79, 122, 0) 36%),
+    radial-gradient(circle at 85% 15%, var(--app-glow-2) 0, rgba(255, 142, 83, 0) 34%),
+    radial-gradient(circle at 45% 95%, var(--app-glow-3) 0, rgba(120, 101, 183, 0) 45%),
     var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-manrope), "Segoe UI", sans-serif;
@@ -45,11 +65,20 @@ a {
   touch-action: manipulation;
 }
 
+.tap-feedback {
+  transition: transform 120ms ease, filter 140ms ease;
+}
+
+.tap-feedback:active {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+}
+
 .input {
   width: 100%;
   border-radius: 14px;
   border: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.82);
+  background: color-mix(in oklab, var(--color-surface-elevated) 88%, transparent);
   padding: 0.78rem 0.9rem;
   font-size: 0.94rem;
   color: var(--color-text);
@@ -57,16 +86,90 @@ a {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.input::placeholder {
+  color: rgba(100, 100, 120, 0.55);
+}
+
 .input:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(255, 79, 122, 0.2);
 }
 
+.auth-form .input {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.auth-form .input::placeholder {
+  color: color-mix(in oklab, var(--color-text) 55%, transparent);
+}
+
+.auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(255, 126, 155, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 242, 244, 0.96)),
+    rgba(255, 255, 255, 0.92);
+  padding: 0.95rem 1rem;
+  box-shadow: 0 18px 34px rgba(86, 41, 63, 0.12);
+}
+
+.auth-alert[data-tone="warning"] {
+  border-color: rgba(255, 186, 107, 0.32);
+  background:
+    linear-gradient(135deg, rgba(255, 252, 245, 0.94), rgba(255, 243, 226, 0.98)),
+    rgba(255, 255, 255, 0.92);
+}
+
+.auth-alert[data-tone="danger"] {
+  border-color: rgba(255, 106, 140, 0.25);
+}
+
+.auth-alert__badge {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  flex: 0 0 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 106, 140, 0.95), rgba(255, 150, 99, 0.95));
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 10px 20px rgba(255, 106, 140, 0.22);
+}
+
+.auth-alert[data-tone="warning"] .auth-alert__badge {
+  background: linear-gradient(135deg, rgba(255, 170, 73, 0.96), rgba(255, 210, 118, 0.96));
+  box-shadow: 0 10px 20px rgba(255, 180, 90, 0.2);
+  color: #4f2c02;
+}
+
+.auth-alert__title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #2b1834;
+}
+
+.auth-alert__message {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(43, 24, 52, 0.76);
+}
+
 .glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 24px 40px rgba(27, 23, 48, 0.12);
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, white 30%);
+  background: color-mix(in oklab, var(--color-surface-elevated) 88%, transparent);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 50px rgba(27, 23, 48, 0.18);
 }
 
 .romance-gradient {
@@ -78,7 +181,7 @@ a {
 }
 
 .splash-overlay {
-  animation: splashFade 520ms ease forwards;
+  animation: splashFade 300ms ease-out forwards;
 }
 
 .float-heart {
@@ -180,14 +283,15 @@ a {
     opacity: 1;
     transform: scale(1);
   }
-  65% {
+  50% {
     opacity: 1;
     transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.01);
+    transform: scale(1);
     visibility: hidden;
+    pointer-events: none;
   }
 }
 
@@ -271,8 +375,8 @@ a {
 @media (max-width: 768px) {
   body {
     background:
-      radial-gradient(circle at 15% 8%, rgba(255, 79, 122, 0.2) 0, rgba(255, 79, 122, 0) 37%),
-      radial-gradient(circle at 90% 10%, rgba(255, 142, 83, 0.14) 0, rgba(255, 142, 83, 0) 34%),
+      radial-gradient(circle at 15% 8%, var(--app-glow-1) 0, rgba(255, 79, 122, 0) 37%),
+      radial-gradient(circle at 90% 10%, var(--app-glow-2) 0, rgba(255, 142, 83, 0) 34%),
       var(--color-bg);
   }
 }

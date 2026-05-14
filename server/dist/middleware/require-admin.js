@@ -1,6 +1,20 @@
+import { env } from "../config/env.js";
 import { findUserById } from "../data/store.js";
 import { verifyAccessToken } from "../utils/jwt.js";
+const getClientIp = (req) => {
+    const forwardedFor = req.headers["x-forwarded-for"];
+    if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
+        return forwardedFor.split(",")[0].trim();
+    }
+    return req.ip || req.socket.remoteAddress || "";
+};
 export const requireAdmin = (req, res, next) => {
+    const clientIp = getClientIp(req);
+    const allowlist = env.ADMIN_ALLOWED_IPS;
+    if (allowlist.length > 0 && clientIp && !allowlist.includes(clientIp)) {
+        res.status(403).json({ message: "Forbidden: admin access is restricted to trusted IPs" });
+        return;
+    }
     const header = req.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.replace("Bearer ", "").trim() : undefined;
     if (!token) {

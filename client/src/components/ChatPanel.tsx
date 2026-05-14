@@ -26,7 +26,7 @@ export default function ChatPanel({
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? null;
 
   return (
-    <section className="rounded-3xl border border-white/50 bg-white p-5 shadow-[0_20px_30px_rgba(27,23,48,0.1)]">
+    <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[0_20px_30px_rgba(27,23,48,0.1)]">
       <h3 className="mb-3 text-lg font-semibold text-[var(--color-primary)]">Conversations</h3>
 
       {matches.length > 0 ? (
@@ -58,7 +58,7 @@ export default function ChatPanel({
                 className={`max-w-[82%] rounded-xl px-3 py-2 text-sm ${
                   msg.senderId === currentUserId
                     ? "ml-auto bg-[var(--color-primary)] text-white"
-                    : "bg-white text-[var(--color-text)]"
+                    : "bg-[var(--color-surface-elevated)] text-[var(--color-text)]"
                 }`}
               >
                 <p>{msg.text}</p>
@@ -78,14 +78,18 @@ export default function ChatPanel({
 
       <form
         className="flex gap-2"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
           const text = String(formData.get("text") ?? "").trim();
           if (text) {
-            void onSend(text);
-            onTypingChange(false);
-            event.currentTarget.reset();
+            try {
+              await onSend(text);
+              onTypingChange(false);
+              event.currentTarget.reset();
+            } catch {
+              // Error is surfaced by the parent component; keep the input value so the user can retry
+            }
           }
         }}
       >

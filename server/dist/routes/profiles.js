@@ -25,7 +25,9 @@ const updateProfileSchema = z.object({
     city: z.string().min(2).optional(),
     bio: z.string().max(500).optional(),
     interests: z.array(z.string().min(1)).max(15).optional(),
-    photos: z.array(z.string().url()).min(1).max(6).optional(),
+    photos: z.array(z.string().min(1)).min(1).max(6).optional(),
+    gender: z.enum(["man", "woman", "other"]).optional(),
+    lookingFor: z.enum(["men", "women", "everyone"]).optional(),
 });
 profilesRouter.put("/profiles/me", requireAuth, (req, res) => {
     const parsed = updateProfileSchema.safeParse(req.body);

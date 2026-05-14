@@ -1,148 +1,237 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DiscoverCard } from "@/lib/types";
+import { optimizeUnsplash } from "@/lib/image";
 
 type Props = {
   user: DiscoverCard;
   onLike: () => void;
   onSkip: () => void;
   onSuperLike: () => void;
+  isBusy?: boolean;
 };
 
-export default function SwipeCard({ user, onLike, onSkip, onSuperLike }: Props) {
+type Lens = "for-you" | "double-date" | "astrology" | "music";
+const LENSES: Array<{ id: Lens; label: string }> = [
+  { id: "for-you", label: "For you" },
+  { id: "double-date", label: "Double Date" },
+  { id: "astrology", label: "Astrology" },
+  { id: "music", label: "Music" },
+];
+
+export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props) {
   const [startX, setStartX] = useState<number | null>(null);
   const [deltaX, setDeltaX] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
+  const [activeLens, setActiveLens] = useState<Lens>("for-you");
+  const [photoIndex, setPhotoIndex] = useState(0);
 
-  const actionHint = useMemo(() => {
-    if (deltaX > 55) return "Release to Like";
-    if (deltaX < -55) return "Release to Skip";
-    return "Swipe right to like, left to pass";
-  }, [deltaX]);
+  useEffect(() => {
+    setPhotoIndex(0);
+    setShowDetails(false);
+  }, [user.id]);
 
-  const resetGesture = () => {
-    setStartX(null);
-    setDeltaX(0);
-  };
+  const likeOpacity = useMemo(() => (deltaX > 20 ? Math.min(1, (deltaX - 20) / 60) : 0), [deltaX]);
+  const skipOpacity = useMemo(() => (deltaX < -20 ? Math.min(1, (-deltaX - 20) / 60) : 0), [deltaX]);
 
-  const handleTouchMove = (clientX: number) => {
-    if (startX === null) return;
-    setDeltaX(clientX - startX);
-  };
-
-  const handleTouchEnd = () => {
+  const resetGesture = () => { setStartX(null); setDeltaX(0); };
+  const handleDragMove = (clientX: number) => { if (startX === null) return; setDeltaX(clientX - startX); };
+  const handleDragEnd = () => {
     if (deltaX > 70) onLike();
-    if (deltaX < -70) onSkip();
+    else if (deltaX < -70) onSkip();
     resetGesture();
   };
 
   const tierLabel = (user.membershipTier ?? "free").toUpperCase();
+  const photoCount = Math.max(1, user.photos.length);
+  const currentPhoto = user.photos[photoIndex] ?? user.photos[0] ?? "";
   const tierClass =
-    user.membershipTier === "diamond"
-      ? "bg-cyan-100 text-cyan-900"
-      : user.membershipTier === "gold"
-        ? "bg-amber-100 text-amber-900"
-        : user.membershipTier === "silver"
-          ? "bg-slate-100 text-slate-800"
-          : "bg-white/80 text-[var(--color-primary)]";
+    user.membershipTier === "diamond" ? "bg-cyan-100 text-cyan-900"
+    : user.membershipTier === "gold" ? "bg-amber-100 text-amber-900"
+    : user.membershipTier === "silver" ? "bg-slate-100 text-slate-800"
+    : "bg-white/85 text-gray-900";
 
   return (
     <article
-      className="overflow-hidden rounded-[2rem] border border-white/60 bg-white shadow-[0_26px_45px_rgba(18,12,30,0.22)]"
-      onTouchStart={(e) => setStartX(e.changedTouches[0].clientX)}
-      onTouchMove={(e) => handleTouchMove(e.changedTouches[0].clientX)}
-      onTouchEnd={handleTouchEnd}
+      className="relative w-full h-full overflow-hidden rounded-[2rem] bg-black select-none"
       style={{
-        transform: `translateX(${deltaX * 0.22}px) rotate(${deltaX * 0.03}deg)`,
+        transform: `translateX(${deltaX * 0.22}px) rotate(${deltaX * 0.025}deg)`,
         transition: startX === null ? "transform 220ms ease" : "none",
+        touchAction: "pan-y",
+        boxShadow: "0 26px 45px rgba(18,12,30,0.3)",
       }}
+      onPointerDown={(e) => { setStartX(e.clientX); }}
+      onPointerMove={(e) => handleDragMove(e.clientX)}
+      onPointerUp={handleDragEnd}
+      onPointerCancel={resetGesture}
+      onPointerLeave={() => { if (startX !== null) handleDragEnd(); }}
     >
-      <div className="relative h-[560px] w-full bg-slate-100 md:h-[620px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={user.photos[0]}
-          alt={`${user.firstName} profile`}
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-x-0 top-0 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)] backdrop-blur">
-              {actionHint}
-            </span>
-            <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.08em] ${tierClass}`}>
-              {tierLabel}
-            </span>
-            {user.verified && (
-              <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-900">
-                Verified ✓
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Background photo */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={optimizeUnsplash(currentPhoto, 560, 70)}
+        alt={`${user.firstName}`}
+        className="absolute inset-0 h-full w-full object-cover"
+        loading="eager"
+        draggable={false}
+      />
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/78 via-black/35 to-transparent p-5 text-white">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">
-              {user.compatibilityBand}
-            </span>
-            <span className="inline-flex rounded-full bg-black/45 px-3 py-1 text-xs font-semibold">
-              AI Score {user.matchScore}%
-            </span>
-          </div>
-          <h2 className="text-3xl font-bold">
-            {user.firstName}, {user.age}
-          </h2>
-          <p className="text-sm opacity-95">{user.city}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {user.interests.slice(0, 4).map((interest) => (
-              <span
-                key={interest}
-                className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]"
-              >
-                {interest}
-              </span>
-            ))}
-          </div>
+      {/* LIKE / NOPE swipe indicators */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-start pl-8" style={{ opacity: likeOpacity }}>
+        <span className="rotate-[-20deg] rounded-xl border-4 border-emerald-400 px-5 py-2 text-3xl font-black text-emerald-400 drop-shadow-lg">LIKE</span>
+      </div>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-end pr-8" style={{ opacity: skipOpacity }}>
+        <span className="rotate-[20deg] rounded-xl border-4 border-red-400 px-5 py-2 text-3xl font-black text-red-400 drop-shadow-lg">NOPE</span>
+      </div>
+
+      {/* Top overlay: photo dots + lens tabs + badges */}
+      <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/60 to-transparent p-4">
+        <div className="mb-2.5 flex gap-1">
+          {Array.from({ length: Math.min(6, photoCount) }, (_, i) => i).map((i) => (
+            <span key={i} className={`h-[3px] flex-1 rounded-full transition-all ${i === Math.min(photoIndex, 5) ? "bg-white" : "bg-white/40"}`} />
+          ))}
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {LENSES.map((lens) => (
+            <button
+              key={lens.id}
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setActiveLens(lens.id); }}
+              className={`whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-semibold transition ${activeLens === lens.id ? "border-white bg-white text-[#141526]" : "border-white/30 bg-black/30 text-white"}`}
+            >
+              {lens.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide ${tierClass}`}>{tierLabel}</span>
+          {user.verified && (
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-900">Verified ✓</span>
+          )}
         </div>
       </div>
 
-      <div className="space-y-4 p-5">
-        <p className="text-sm leading-relaxed text-[var(--color-text)]">{user.bio}</p>
+      {/* Invisible left / right tap zones for photo navigation */}
+      {photoCount > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous photo"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setPhotoIndex((p) => (p === 0 ? photoCount - 1 : p - 1)); }}
+            className="absolute left-0 top-[14%] h-[52%] w-[28%] bg-transparent"
+          />
+          <button
+            type="button"
+            aria-label="Next photo"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setPhotoIndex((p) => (p + 1) % photoCount); }}
+            className="absolute right-0 top-[14%] h-[52%] w-[28%] bg-transparent"
+          />
+        </>
+      )}
 
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">AI Matchmaker</p>
-          <ul className="mt-2 space-y-1 text-xs text-[var(--color-primary)]">
-            {user.aiReasons.slice(0, 2).map((reason) => (
-              <li key={reason}>• {reason}</li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs font-medium text-[var(--color-primary)]">
-            Suggested first date: {user.dateIdea}
-          </p>
+      {/* Bottom gradient + profile info + action buttons */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/92 via-black/60 to-transparent pt-20">
+        <div className="px-5 pb-2">
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase text-gray-900">{user.compatibilityBand}</span>
+            <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] font-semibold text-white">AI {user.matchScore}%</span>
+          </div>
+          <h2 className="text-[2rem] font-bold leading-tight text-white">{user.firstName}, {user.age}</h2>
+          <p className="text-sm text-white/90">{user.city}</p>
+          <p className="text-xs text-white/60">{user.distanceLabel}</p>
+          {Boolean(user.modeReasons?.length) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {user.modeReasons?.slice(0, 3).map((reason) => (
+                <span key={reason} className="rounded-full border border-white/30 bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">{reason}</span>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        {/* Action buttons row — overlaid inside the card */}
+        <div className="flex items-center justify-center gap-4 px-5 pb-5 pt-2">
           <button
-            onClick={onSkip}
+            type="button"
+            disabled={isBusy}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); if (!isBusy) onSkip(); }}
+            className="flex h-[58px] w-[58px] items-center justify-center rounded-full border-2 border-[#ff6f8f]/50 bg-white text-[22px] text-[#ff6f8f] shadow-[0_6px_20px_rgba(255,79,122,0.28)] transition active:scale-90 disabled:opacity-50"
             aria-label="Pass"
-            className="grid h-12 place-items-center rounded-full border border-[#ffd5de] bg-white text-xl font-semibold text-[#ff6f8f] transition hover:scale-[1.03]"
-          >
-            ✕
-          </button>
+          >✕</button>
           <button
-            onClick={onSuperLike}
+            type="button"
+            disabled={isBusy}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); if (!isBusy) onSuperLike(); }}
+            className="flex h-[50px] w-[50px] items-center justify-center rounded-full border-2 border-[#7c6bce]/60 bg-white text-[20px] text-[#5f4dc0] shadow-[0_4px_14px_rgba(92,75,180,0.28)] transition active:scale-90 disabled:opacity-50"
             aria-label="Super like"
-            className="grid h-12 place-items-center rounded-full border border-[#7c6bce] bg-white text-xl font-semibold text-[#5f4dc0] transition hover:scale-[1.03]"
-          >
-            ★
-          </button>
+          >★</button>
           <button
-            onClick={onLike}
+            type="button"
+            disabled={isBusy}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); if (!isBusy) onLike(); }}
+            className="flex h-[58px] w-[58px] items-center justify-center rounded-full romance-gradient text-[22px] text-white shadow-[0_6px_24px_rgba(255,79,122,0.5)] transition active:scale-90 disabled:opacity-50"
             aria-label="Like"
-            className="grid h-12 place-items-center rounded-full romance-gradient text-xl font-semibold text-white transition hover:scale-[1.03]"
+          >❤</button>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setShowDetails((p) => !p); }}
+            className="flex h-[50px] w-[50px] items-center justify-center rounded-full border-2 border-white/40 bg-black/50 text-white backdrop-blur transition active:scale-90"
+            aria-label={showDetails ? "Hide details" : "Show details"}
+            aria-expanded={showDetails}
           >
-            ❤
+            <span className={`text-sm transition-transform duration-200 ${showDetails ? "rotate-180" : ""}`}>▴</span>
           </button>
+        </div>
+      </div>
+
+      {/* Details drawer — slides up from bottom */}
+      <div
+        className={`absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out ${showDetails ? "translate-y-0" : "translate-y-full"}`}
+        style={{ maxHeight: "64%" }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-hidden={!showDetails}
+      >
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-[var(--color-border)]" />
+        </div>
+        <div className="flex items-center justify-between px-5 pb-2">
+          <p className="text-base font-bold text-[var(--color-primary)]">{user.firstName}&apos;s Details</p>
+          <button
+            type="button"
+            onClick={() => setShowDetails(false)}
+            className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface)]"
+          >Close</button>
+        </div>
+        <div className="overflow-y-auto px-5 pb-6" style={{ maxHeight: "calc(64dvh - 80px)" }}>
+          <div className="space-y-3">
+            {user.interests.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {user.interests.slice(0, 10).map((interest) => (
+                  <span key={interest} className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary)]">{interest}</span>
+                ))}
+              </div>
+            )}
+            <p className="text-sm leading-relaxed text-[var(--color-text)]">{user.bio}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">AI Matchmaker</p>
+              <ul className="mt-2 space-y-1.5 text-xs text-[var(--color-primary)]">
+                {user.aiReasons.slice(0, 2).map((reason) => (
+                  <li key={reason}>• {reason}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs font-medium text-[var(--color-accent)]">
+                💡 Suggested first date: {user.dateIdea}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </article>

@@ -1,4 +1,5 @@
 import type { MatchItem } from "@/lib/types";
+import { optimizeUnsplash } from "@/lib/image";
 
 type Props = {
   matches: MatchItem[];
@@ -8,7 +9,7 @@ type Props = {
 
 export default function MatchesPanel({ matches, selectedMatchId, onSelectMatch }: Props) {
   return (
-    <section className="rounded-3xl border border-white/50 bg-white p-5 shadow-[0_20px_30px_rgba(27,23,48,0.1)]">
+    <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[0_20px_30px_rgba(27,23,48,0.1)]">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-[var(--color-primary)]">Your Matches</h3>
         <span className="rounded-full bg-[var(--color-surface)] px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
@@ -29,14 +30,15 @@ export default function MatchesPanel({ matches, selectedMatchId, onSelectMatch }
               className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
                 selectedMatchId === item.id
                   ? "border-[var(--color-accent)] bg-[var(--color-surface)]"
-                  : "border-[var(--color-border)] bg-white hover:border-[var(--color-accent)]"
+                  : "border-[var(--color-border)] bg-[var(--color-surface-elevated)] hover:border-[var(--color-accent)]"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.otherUser.photos[0]}
+                src={optimizeUnsplash(item.otherUser.photos[0], 140, 50)}
                 alt={item.otherUser.firstName}
                 className="h-12 w-12 rounded-full object-cover"
+                loading="lazy"
               />
               <div>
                 <p className="font-semibold text-[var(--color-text)]">
