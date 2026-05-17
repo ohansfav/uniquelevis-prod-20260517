@@ -1,8 +1,10 @@
 import "dotenv/config";
 
-export const env = {
+const NODE_ENV = process.env.NODE_ENV ?? "development";
+
+const env = {
   PORT: Number(process.env.PORT ?? 5000),
-  NODE_ENV: process.env.NODE_ENV ?? "development",
+  NODE_ENV,
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? "http://localhost:3000",
   APP_BASE_URL: process.env.APP_BASE_URL ?? "http://localhost:3000",
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
@@ -20,3 +22,21 @@ export const env = {
     .map((value) => value.trim())
     .filter(Boolean),
 };
+
+const assertRequiredInProduction = (name: string, value: string, invalidValues: string[] = []) => {
+  if (env.NODE_ENV !== "production") {
+    return;
+  }
+
+  const normalized = value.trim();
+  if (!normalized || invalidValues.includes(normalized)) {
+    throw new Error(`Missing or unsafe ${name}. Set a secure value in environment variables.`);
+  }
+};
+
+assertRequiredInProduction("JWT_ACCESS_SECRET", env.JWT_ACCESS_SECRET, ["dev_access_secret"]);
+assertRequiredInProduction("JWT_REFRESH_SECRET", env.JWT_REFRESH_SECRET, ["dev_refresh_secret"]);
+assertRequiredInProduction("CLIENT_ORIGIN", env.CLIENT_ORIGIN, ["http://localhost:3000"]);
+assertRequiredInProduction("APP_BASE_URL", env.APP_BASE_URL, ["http://localhost:3000"]);
+
+export { env };

@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const apiProxyTarget = process.env.API_PROXY_TARGET;
+
 const nextConfig: NextConfig = {
   allowedDevOrigins:
     process.env.NODE_ENV === "development"
@@ -25,10 +27,14 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    if (!apiProxyTarget) {
+      return [];
+    }
+
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:5000/api/:path*",
+        destination: `${apiProxyTarget}/api/:path*`,
       },
     ];
   },
