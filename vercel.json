@@ -1,6 +1,0 @@
-{
-  "version": 2,
-  "buildCommand": "npm --prefix client install && npm --prefix client run build",
-  "outputDirectory": "client/.next",
-  "installCommand": "npm install"
-}
