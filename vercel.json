@@ -1,9 +1,6 @@
 {
   "version": 2,
-  "projects": [
-    {
-      "name": "client",
-      "rootDirectory": "client"
-    }
-  ]
+  "buildCommand": "npm --prefix client install && npm --prefix client run build",
+  "outputDirectory": "client/.next",
+  "installCommand": "npm install"
 }
