@@ -12,7 +12,11 @@ import type {
   VerificationStatus,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://uniquelevis-prod-20260517-48gyvodtv-kiaras-projects-451d3b80.vercel.app/api"
+    : "/api");
 
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";
