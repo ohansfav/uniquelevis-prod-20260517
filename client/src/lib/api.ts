@@ -63,7 +63,7 @@ const readErrorMessage = async (res: Response, fallback: string) => {
   }
 
   if (res.status === 404) {
-    return `${fallback}. The service could not be reached right now.`;
+    return `${fallback}. API route not found. Deployment proxy may be misconfigured.`;
   }
 
   return `${fallback}. Please try again.`;
@@ -113,7 +113,7 @@ export const signup = async (payload: {
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error("Signup failed");
+    throw new Error(await readErrorMessage(res, "Signup failed"));
   }
   return (await res.json()) as AuthResponse;
 };

@@ -947,7 +947,11 @@ export default function Home() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#140c22]/68 via-[#1a1230]/62 to-[#120f21]/88" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_12%,rgba(255,97,138,0.42),transparent_44%),radial-gradient(circle_at_82%_22%,rgba(255,164,120,0.24),transparent_38%),radial-gradient(circle_at_50%_90%,rgba(116,93,190,0.2),transparent_45%)]" />
 
-        <header className="relative z-[70] mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 md:px-8 pointer-events-auto">
+        <div
+          className="relative z-[70] border-b border-white/15 bg-[linear-gradient(180deg,rgba(22,16,36,0.88)_0%,rgba(22,16,36,0.66)_100%)] backdrop-blur-xl pointer-events-auto"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 md:px-8">
           <div className="flex items-center gap-2">
             <span className="romance-gradient grid h-10 w-10 place-items-center rounded-full text-base font-bold text-white">❤</span>
             <h1 className="leading-none">
@@ -1003,6 +1007,7 @@ export default function Home() {
             </a>
           </div>
         </header>
+        </div>
 
         <main className="relative z-20 mx-auto w-full max-w-6xl px-4 pb-16 text-center md:px-8">
           {/* Hero — profile cards flanking centre text */}

@@ -33,7 +33,10 @@ export default function NavBar({ isAuthenticated, onLogout, onSearch }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_84%,transparent)] backdrop-blur-xl">
+    <header
+      className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_84%,transparent)] backdrop-blur-xl"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-3 py-3 md:px-6">
         <div className="flex items-center gap-2 md:gap-3">
           <button
