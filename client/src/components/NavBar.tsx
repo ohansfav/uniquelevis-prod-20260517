@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 type Props = {
   isAuthenticated: boolean;
   onLogout: () => void;
+  onSearch?: () => void;
 };
 
-export default function NavBar({ isAuthenticated, onLogout }: Props) {
+export default function NavBar({ isAuthenticated, onLogout, onSearch }: Props) {
   const router = useRouter();
   const [secretTapCount, setSecretTapCount] = useState(0);
   const secretTimer = useRef<number | null>(null);
@@ -32,7 +33,7 @@ export default function NavBar({ isAuthenticated, onLogout }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_82%,transparent)] backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_84%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-3 py-3 md:px-6">
         <div className="flex items-center gap-2 md:gap-3">
           <button
@@ -50,6 +51,23 @@ export default function NavBar({ isAuthenticated, onLogout }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={onSearch}
+              className="group inline-flex items-center gap-2 rounded-full border border-[color-mix(in_oklab,var(--color-accent)_35%,var(--color-border))] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent)_12%,white)_0%,color-mix(in_oklab,var(--color-accent-2)_12%,white)_100%)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-[var(--color-accent)]"
+              aria-label="Search profiles"
+            >
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-white/80 text-[var(--color-accent)] shadow-sm transition group-hover:bg-white">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </span>
+              Search
+            </button>
+          )}
+
           {!isAuthenticated && (
             <button onClick={() => router.back()} className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
               Back

@@ -1483,7 +1483,14 @@ export default function Home() {
       </div>
 
       {splashOverlay}
-      <NavBar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
+      <NavBar
+        isAuthenticated={isAuthenticated}
+        onLogout={handleLogout}
+        onSearch={() => {
+          setMobileTab("explore");
+          setStatus("Explore opened. Use filters to find better matches quickly.");
+        }}
+      />
 
       <main className="relative z-10 mx-auto w-full max-w-7xl px-3 py-4 md:px-6 md:py-6">
         <section className="mb-4 flex items-center justify-between rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_88%,transparent)] px-4 py-3 shadow-[0_10px_25px_rgba(27,23,48,0.08)] backdrop-blur-sm">

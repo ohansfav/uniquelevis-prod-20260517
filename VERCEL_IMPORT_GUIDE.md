@@ -40,10 +40,12 @@ Add these before first deploy:
 
 Optional billing vars:
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PRICE_SILVER`
-- `STRIPE_PRICE_GOLD`
-- `STRIPE_PRICE_DIAMOND`
+- `PAYSTACK_SECRET_KEY`
+- `PAYSTACK_WEBHOOK_SECRET`
+- `PAYSTACK_PUBLIC_KEY`
+- `PAYSTACK_AMOUNT_SILVER` (kobo, e.g. `500000`)
+- `PAYSTACK_AMOUNT_GOLD` (kobo, e.g. `1000000`)
+- `PAYSTACK_AMOUNT_DIAMOND` (kobo, e.g. `2000000`)
 - `BILLING_PROVIDER_TOKEN`
 
 After deployment, copy API domain, e.g. `https://your-api.vercel.app`.
@@ -65,6 +67,7 @@ Set these before deploy:
 
 - `API_PROXY_TARGET=https://<backend-domain>`
 - `NEXT_PUBLIC_API_URL=/api`
+- `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=<your-paystack-public-key>`
 
 Example:
 
@@ -72,6 +75,18 @@ Example:
 - `NEXT_PUBLIC_API_URL=/api`
 
 This enables server-side rewrite from frontend `/api/*` to backend `/api/*`.
+
+---
+
+## Paystack Webhook Wiring
+
+To automatically upgrade membership after successful payment:
+
+1. In Paystack dashboard, create a webhook endpoint:
+   - URL: `https://<backend-domain>/api/billing/webhook/paystack`
+2. Copy the webhook signing secret into backend env as:
+   - `PAYSTACK_WEBHOOK_SECRET=<your_paystack_secret_key>`
+3. Redeploy backend.
 
 ---
 

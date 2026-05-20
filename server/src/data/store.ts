@@ -16,6 +16,16 @@ const seedPassword = bcrypt.hashSync("Password123!", 10);
 const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
 
 const STORE_FILE = join(process.cwd(), "data", "store.json");
+let persistenceEnabled = true;
+
+const disablePersistence = (reason: string) => {
+  if (!persistenceEnabled) {
+    return;
+  }
+
+  persistenceEnabled = false;
+  console.warn(`[store] Persistence disabled; running in-memory only. ${reason}`);
+};
 
 type StoreSnapshot = {
   users: UserRecord[];
@@ -354,6 +364,10 @@ const ensureSeedUsers = () => {
 };
 
 const writeSnapshot = () => {
+  if (!persistenceEnabled) {
+    return;
+  }
+
   const snapshot: StoreSnapshot = {
     users,
     likes,
@@ -362,11 +376,22 @@ const writeSnapshot = () => {
     refreshSessions,
   };
 
-  mkdirSync(dirname(STORE_FILE), { recursive: true });
-  writeFileSync(STORE_FILE, JSON.stringify(snapshot, null, 2));
+  try {
+    mkdirSync(dirname(STORE_FILE), { recursive: true });
+    writeFileSync(STORE_FILE, JSON.stringify(snapshot, null, 2));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown filesystem error";
+    disablePersistence(message);
+  }
 };
 
 export const initStore = () => {
+  // Vercel functions are immutable between deployments; only keep state in memory.
+  if (process.env.VERCEL === "1") {
+    disablePersistence("VERCEL runtime detected");
+    return;
+  }
+
   if (!existsSync(STORE_FILE)) {
     writeSnapshot();
     return;

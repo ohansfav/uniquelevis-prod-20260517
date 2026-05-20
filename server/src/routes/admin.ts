@@ -98,3 +98,30 @@ adminRouter.put("/admin/users/:userId/tier", requireAdmin, (req, res) => {
   const ok = setMembershipTier(req.params.userId, parsed.data.tier);
   res.json({ ok, tier: parsed.data.tier });
 });
+
+const billingTestSchema = z.object({
+  userId: z.string().min(1),
+  tier: z.enum(["silver", "gold", "diamond"]),
+});
+
+adminRouter.post("/admin/billing/test-upgrade", requireAdmin, (req, res) => {
+  const parsed = billingTestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
+    return;
+  }
+
+  const user = findUserById(parsed.data.userId);
+  if (!user || user.isAdmin) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  const ok = setMembershipTier(parsed.data.userId, parsed.data.tier);
+  if (!ok) {
+    res.status(500).json({ message: "Unable to apply test upgrade" });
+    return;
+  }
+
+  res.json({ ok: true, userId: parsed.data.userId, tier: parsed.data.tier, mode: "simulated-paystack-webhook" });
+});

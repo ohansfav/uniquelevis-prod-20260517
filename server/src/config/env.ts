@@ -1,20 +1,29 @@
 import "dotenv/config";
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
+const clientOriginRaw = process.env.CLIENT_ORIGIN ?? "http://localhost:3000";
+
+const clientOrigins = clientOriginRaw
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const env = {
   PORT: Number(process.env.PORT ?? 5000),
   NODE_ENV,
-  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? "http://localhost:3000",
+  CLIENT_ORIGIN: clientOrigins[0] ?? "http://localhost:3000",
+  CLIENT_ORIGINS: clientOrigins,
   APP_BASE_URL: process.env.APP_BASE_URL ?? "http://localhost:3000",
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET ?? "dev_refresh_secret",
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN ?? "15m",
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "",
-  STRIPE_PRICE_SILVER: process.env.STRIPE_PRICE_SILVER ?? "",
-  STRIPE_PRICE_GOLD: process.env.STRIPE_PRICE_GOLD ?? "",
-  STRIPE_PRICE_DIAMOND: process.env.STRIPE_PRICE_DIAMOND ?? "",
+  PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? "",
+  PAYSTACK_WEBHOOK_SECRET: process.env.PAYSTACK_WEBHOOK_SECRET ?? "",
+  PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY ?? "",
+  PAYSTACK_AMOUNT_SILVER: Number(process.env.PAYSTACK_AMOUNT_SILVER ?? 500000),
+  PAYSTACK_AMOUNT_GOLD: Number(process.env.PAYSTACK_AMOUNT_GOLD ?? 1000000),
+  PAYSTACK_AMOUNT_DIAMOND: Number(process.env.PAYSTACK_AMOUNT_DIAMOND ?? 2000000),
   BILLING_PROVIDER_TOKEN: process.env.BILLING_PROVIDER_TOKEN ?? "",
   ADMIN_UNLOCK_PHRASE: process.env.ADMIN_UNLOCK_PHRASE ?? "diamonds-open",
   ADMIN_ALLOWED_IPS: (process.env.ADMIN_ALLOWED_IPS ?? "127.0.0.1,::1,::ffff:127.0.0.1")

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import {
   adminLogin,
   approveVerificationByAdmin,
+  getBillingConfig,
   getAdminStats,
   getAdminUsers,
   getPendingVerifications,
   rejectVerificationByAdmin,
+  runAdminBillingTestUpgrade,
   updateUserTierByAdmin,
 } from "@/lib/api";
 import type { AdminStats, AdminUser, MembershipTier, VerificationRequest } from "@/lib/types";
@@ -21,20 +23,35 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pending, setPending] = useState<VerificationRequest[]>([]);
+  const [billingConfig, setBillingConfig] = useState<{
+    provider: "paystack";
+    checkoutConfigured: boolean;
+    webhookConfigured: boolean;
+    publicKeyConfigured: boolean;
+    planAmounts: { silver: number; gold: number; diamond: number };
+    missing: string[];
+  } | null>(null);
+  const [billingTestUserId, setBillingTestUserId] = useState("");
+  const [billingTestTier, setBillingTestTier] = useState<"silver" | "gold" | "diamond">("silver");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("God Eyes online. Track users, tiers, and verification decisions.");
 
   const loadAdminData = async (accessToken: string) => {
-    const [nextStats, nextUsers, nextPending] = await Promise.all([
+    const [nextStats, nextUsers, nextPending, nextBillingConfig] = await Promise.all([
       getAdminStats(accessToken),
       getAdminUsers(accessToken),
       getPendingVerifications(accessToken),
+      getBillingConfig(),
     ]);
 
     setStats(nextStats);
     setUsers(nextUsers);
     setPending(nextPending);
+    setBillingConfig(nextBillingConfig);
+    if (!billingTestUserId && nextUsers.length > 0) {
+      setBillingTestUserId(nextUsers[0].id);
+    }
   };
 
   useEffect(() => {
@@ -80,6 +97,13 @@ export default function AdminPage() {
     await updateUserTierByAdmin(token, userId, tier);
     await loadAdminData(token);
     setMessage(`Membership updated to ${tier.toUpperCase()}.`);
+  };
+
+  const handleRunBillingTest = async () => {
+    if (!token || !billingTestUserId) return;
+    await runAdminBillingTestUpgrade(token, billingTestUserId, billingTestTier);
+    await loadAdminData(token);
+    setMessage(`Paystack webhook simulation applied: ${billingTestTier.toUpperCase()} for selected user.`);
   };
 
   if (!token) {
@@ -135,6 +159,63 @@ export default function AdminPage() {
           <StatCard label="Matches" value={stats?.totalMatches ?? 0} />
           <StatCard label="Messages" value={stats?.totalMessages ?? 0} />
           <StatCard label="Likes" value={stats?.totalLikes ?? 0} />
+        </section>
+
+        <section className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
+          <h2 className="text-lg font-semibold text-[var(--color-primary)]">Billing Health (Paystack)</h2>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">Live readiness check plus simulated upgrade trigger.</p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className={`rounded-full px-3 py-1 font-semibold ${billingConfig?.checkoutConfigured ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+              Checkout {billingConfig?.checkoutConfigured ? "Ready" : "Not Ready"}
+            </span>
+            <span className={`rounded-full px-3 py-1 font-semibold ${billingConfig?.webhookConfigured ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+              Webhook {billingConfig?.webhookConfigured ? "Ready" : "Not Ready"}
+            </span>
+            <span className={`rounded-full px-3 py-1 font-semibold ${billingConfig?.publicKeyConfigured ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+              Public Key {billingConfig?.publicKeyConfigured ? "Set" : "Missing"}
+            </span>
+          </div>
+
+          {billingConfig && billingConfig.missing.length > 0 && (
+            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              Missing env vars: {billingConfig.missing.join(", ")}
+            </p>
+          )}
+
+          <div className="mt-4 grid gap-2 md:grid-cols-[1.2fr_auto_auto_auto] md:items-center">
+            <select
+              className="input"
+              value={billingTestUserId}
+              onChange={(event) => setBillingTestUserId(event.target.value)}
+            >
+              <option value="">Select user for test upgrade</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.firstName} ({user.email})
+                </option>
+              ))}
+            </select>
+            <select
+              className="input"
+              value={billingTestTier}
+              onChange={(event) => setBillingTestTier(event.target.value as "silver" | "gold" | "diamond")}
+            >
+              <option value="silver">Silver</option>
+              <option value="gold">Gold</option>
+              <option value="diamond">Diamond</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => void handleRunBillingTest()}
+              className="rounded-full bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white"
+            >
+              Run Test Upgrade
+            </button>
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              Amounts (kobo): S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
+            </p>
+          </div>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_1.6fr]">

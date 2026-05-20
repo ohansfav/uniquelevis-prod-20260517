@@ -251,6 +251,8 @@ export default function MessagesPage() {
         localStorage.removeItem("ul_access_token");
         localStorage.removeItem("ul_refresh_token");
         window.location.href = "/";
+      }} onSearch={() => {
+        window.location.href = "/";
       }} />
       <main className="mx-auto w-full max-w-6xl px-4 py-5 md:px-6 md:py-8">
         <h2 className="mb-5 text-3xl text-[var(--color-primary)]">Messages</h2>

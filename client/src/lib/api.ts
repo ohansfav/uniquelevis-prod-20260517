@@ -357,6 +357,25 @@ export const createUpgradeCheckout = async (
   return (await res.json()) as { ok: boolean; checkoutUrl: string | null; sessionId: string };
 };
 
+export const getBillingConfig = async () => {
+  const res = await fetch(`${API_BASE}/billing/config`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load billing config"));
+  }
+
+  return (await res.json()) as {
+    provider: "paystack";
+    checkoutConfigured: boolean;
+    webhookConfigured: boolean;
+    publicKeyConfigured: boolean;
+    planAmounts: { silver: number; gold: number; diamond: number };
+    missing: string[];
+  };
+};
+
 export const getAdminStats = async (token: string) => {
   const res = await fetch(`${API_BASE}/admin/stats`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -427,4 +446,25 @@ export const updateUserTierByAdmin = async (token: string, userId: string, tier:
     throw new Error("Failed to update tier");
   }
   return (await res.json()) as { ok: boolean; tier: MembershipTier };
+};
+
+export const runAdminBillingTestUpgrade = async (
+  token: string,
+  userId: string,
+  tier: Exclude<MembershipTier, "free">,
+) => {
+  const res = await fetch(`${API_BASE}/admin/billing/test-upgrade`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId, tier }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to run billing test"));
+  }
+
+  return (await res.json()) as { ok: boolean; userId: string; tier: Exclude<MembershipTier, "free">; mode: string };
 };
