@@ -20,6 +20,11 @@ const API_BASE = isProduction
   ? "https://uniquelevis-api.vercel.app/api"
   : "/api";
 
+// Log the API base for debugging
+if (typeof window !== "undefined") {
+  console.log(`[API] Using API_BASE: ${API_BASE}`);
+}
+
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";
   distance?: string;
@@ -113,13 +118,18 @@ export const signup = async (payload: {
   age: number;
   city: string;
 }) => {
-  const res = await fetch(`${API_BASE}/auth/signup`, {
+  const url = `${API_BASE}/auth/signup`;
+  console.log(`[API] Signup request to: ${url}`);
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  console.log(`[API] Signup response status: ${res.status} ${res.statusText}`);
   if (!res.ok) {
-    throw new Error(await readErrorMessage(res, "Signup failed"));
+    const errorMsg = await readErrorMessage(res, "Signup failed");
+    console.error(`[API] Signup error: ${errorMsg}`);
+    throw new Error(errorMsg);
   }
   return (await res.json()) as AuthResponse;
 };
