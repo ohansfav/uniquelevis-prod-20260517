@@ -12,15 +12,13 @@ import type {
   VerificationStatus,
 } from "./types";
 
-const rawApiBase = process.env.NEXT_PUBLIC_API_URL?.trim();
 const isProduction = process.env.NODE_ENV === "production";
 
-const API_BASE =
-  rawApiBase && (!isProduction || rawApiBase !== "/api")
-    ? rawApiBase
-    : isProduction
-      ? "https://uniquelevis-api.vercel.app/api"
-      : "/api";
+// In production, always use the deployed backend URL.
+// In development, use local /api proxy.
+const API_BASE = isProduction
+  ? "https://uniquelevis-api.vercel.app/api"
+  : "/api";
 
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";
