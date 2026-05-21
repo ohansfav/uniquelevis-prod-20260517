@@ -12,11 +12,15 @@ import type {
   VerificationStatus,
 } from "./types";
 
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL?.trim();
+const isProduction = process.env.NODE_ENV === "production";
+
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ??
-  (process.env.NODE_ENV === "production"
-    ? "https://uniquelevis-api.vercel.app/api"
-    : "/api");
+  rawApiBase && (!isProduction || rawApiBase !== "/api")
+    ? rawApiBase
+    : isProduction
+      ? "https://uniquelevis-api.vercel.app/api"
+      : "/api";
 
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";
