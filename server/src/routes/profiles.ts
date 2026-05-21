@@ -29,7 +29,7 @@ const updateProfileSchema = z.object({
   city: z.string().min(2).optional(),
   bio: z.string().max(500).optional(),
   interests: z.array(z.string().min(1)).max(15).optional(),
-  photos: z.array(z.string().min(1)).min(1).max(6).optional(),
+  photos: z.array(z.string().min(1).max(2_000_000)).min(1).max(6).optional(),
   gender: z.enum(["man", "woman", "other"]).optional(),
   lookingFor: z.enum(["men", "women", "everyone"]).optional(),
 });
@@ -51,7 +51,13 @@ profilesRouter.put("/profiles/me", requireAuth, (req, res) => {
 });
 
 const verifySchema = z.object({
-  photoUrl: z.string().url(),
+  photoUrl: z
+    .string()
+    .max(2_000_000)
+    .refine(
+      (value) => z.string().url().safeParse(value).success || /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value),
+      { message: "Provide a valid photoUrl" },
+    ),
 });
 
 profilesRouter.post("/profiles/me/verify", requireAuth, (req, res) => {

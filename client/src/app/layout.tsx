@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Manrope, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -21,6 +21,24 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Unique Levi's",
   description: "A modern dating app for meaningful matches and real-time conversations",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/app-icon.svg",
+    apple: "/app-icon.svg",
+    shortcut: "/app-icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Unique Levi's",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#160f25",
 };
 
 export default function RootLayout({

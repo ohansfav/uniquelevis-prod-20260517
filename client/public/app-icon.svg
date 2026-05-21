@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Unique Levi's">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff4f7a"/>
+      <stop offset="100%" stop-color="#ff8e53"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="#160f25"/>
+  <path fill="url(#g)" d="M256 443c-10 0-20-4-27-12L96 298C57 259 57 196 96 157c38-38 100-38 138 0l22 22 22-22c38-38 100-38 138 0 39 39 39 102 0 141L283 431c-7 8-17 12-27 12Z"/>
+</svg>

@@ -247,7 +247,7 @@ export const updateMyProfile = async (
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error("Profile update failed");
+    throw new Error(await readErrorMessage(res, "Profile update failed"));
   }
   const data = (await res.json()) as { profile: PublicUser };
   return data.profile;
@@ -263,7 +263,7 @@ export const requestProfileVerification = async (token: string, photoUrl: string
     body: JSON.stringify({ photoUrl }),
   });
   if (!res.ok) {
-    throw new Error("Verification request failed");
+    throw new Error(await readErrorMessage(res, "Verification request failed"));
   }
   return (await res.json()) as { ok: boolean; status: VerificationStatus; message: string };
 };

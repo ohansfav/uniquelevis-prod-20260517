@@ -2,6 +2,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import type { PublicUser } from "../lib/types";
 import { updateMyProfile } from "../lib/api";
+import { fileToOptimizedDataUrl } from "../lib/imageUpload";
 
 const INTERESTS = [
   "Travel", "Music", "Food & Dining", "Fitness", "Photography", "Art",
@@ -60,32 +61,16 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setPhotoUploadError("Please select an image file.");
-      return;
-    }
-
-    const maxSizeBytes = 5 * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      setPhotoUploadError("Image is too large. Please use a file up to 5MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (!result) {
-        setPhotoUploadError("Could not read image file. Try another photo.");
-        return;
-      }
-      setPhotoUploadError(null);
-      setCustomUrl(result);
-      setSelectedPhoto("");
-    };
-    reader.onerror = () => {
-      setPhotoUploadError("Could not read image file. Try another photo.");
-    };
-    reader.readAsDataURL(file);
+    void fileToOptimizedDataUrl(file, { maxBytes: 900 * 1024 })
+      .then((result) => {
+        setPhotoUploadError(null);
+        setCustomUrl(result);
+        setSelectedPhoto("");
+      })
+      .catch((uploadError) => {
+        const message = uploadError instanceof Error ? uploadError.message : "Could not read image file. Try another photo.";
+        setPhotoUploadError(message);
+      });
 
     event.target.value = "";
   };

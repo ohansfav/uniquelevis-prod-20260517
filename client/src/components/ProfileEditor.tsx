@@ -1,5 +1,6 @@
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import type { PublicUser } from "@/lib/types";
+import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
 
 type Props = {
   profile: PublicUser | null;
@@ -29,28 +30,33 @@ export default function ProfileEditor({
 
   const handlePhotoFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    if (file.size > 8 * 1024 * 1024) { alert("Image must be under 8 MB"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null;
-      if (!result) return;
-      setPhotos((prev) => [...prev, result].slice(0, 6));
-    };
-    reader.readAsDataURL(file);
+    if (!file) return;
+
+    void fileToOptimizedDataUrl(file, { maxBytes: 900 * 1024 })
+      .then((result) => {
+        setPhotos((prev) => [...prev, result].slice(0, 6));
+      })
+      .catch((uploadError) => {
+        const message = uploadError instanceof Error ? uploadError.message : "Could not read image file. Try another one.";
+        alert(message);
+      });
+
     e.target.value = "";
   };
 
   const handleVerifyFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    if (file.size > 8 * 1024 * 1024) { alert("Image must be under 8 MB"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null;
-      if (result) setVerificationPhoto(result);
-    };
-    reader.readAsDataURL(file);
+    if (!file) return;
+
+    void fileToOptimizedDataUrl(file, { maxBytes: 900 * 1024 })
+      .then((result) => {
+        setVerificationPhoto(result);
+      })
+      .catch((uploadError) => {
+        const message = uploadError instanceof Error ? uploadError.message : "Could not read image file. Try another one.";
+        alert(message);
+      });
+
     e.target.value = "";
   };
 
