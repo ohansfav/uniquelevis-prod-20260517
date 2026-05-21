@@ -27,7 +27,9 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    if (!apiProxyTarget) {
+    // On production, disable rewrites - use hardcoded backend URL in client code
+    // On dev, use rewrites if API_PROXY_TARGET is set
+    if (process.env.NODE_ENV === "production" || !apiProxyTarget) {
       return [];
     }
 
