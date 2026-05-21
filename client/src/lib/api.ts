@@ -12,22 +12,17 @@ import type {
   VerificationStatus,
 } from "./types";
 
-const isProduction = process.env.NODE_ENV === "production";
+// ALWAYS use the backend URL - no conditionals that might fail
+// In production (deployed), all requests go to the backend
+// In development (localhost), keep using /api for local testing
+const API_BASE = (typeof window !== "undefined" && 
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
+  ? "/api"  // Development only
+  : "https://uniquelevis-api.vercel.app/api";  // Production - ALWAYS use this on Vercel
 
-// In production, always use the deployed backend URL.
-// In development, use local /api proxy.
-// Determine if we're in production by checking the hostname
-const isProduction = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
-
-// Always use the hardcoded backend URL for production (non-localhost)
-// Use local /api proxy for development (localhost)
-const API_BASE = isProduction
-  ? "https://uniquelevis-api.vercel.app/api"
-  : "/api";
-
-// Log the API base for debugging
+// Log API base for debugging
 if (typeof window !== "undefined") {
-  console.log(`[API] Production=${isProduction}, Hostname=${window.location.hostname}, API_BASE=${API_BASE}`);
+  console.log(`[API] Hostname=${window.location.hostname}, API_BASE=${API_BASE}`);
 }
 
 export type DiscoverQueryFilters = {
