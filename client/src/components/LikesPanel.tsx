@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BillingProvider, IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
 
@@ -18,8 +18,8 @@ type Props = {
 
 const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string; price: string }> = [
   { plan: "platinum", label: "Platinum", price: "N500", accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you." },
-  { plan: "silver", label: "Silver", price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility plus messaging." },
-  { plan: "gold", label: "Gold", price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Messaging plus Gold privacy gate." },
+  { plan: "silver", label: "Silver", price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility with premium discover access." },
+  { plan: "gold", label: "Gold", price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Gold privacy gate and higher-tier visibility." },
   { plan: "diamond", label: "Diamond", price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access." },
 ];
 
@@ -38,6 +38,12 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
     availableProviders.push("paystack");
   }
   const selectedProviderAvailable = availableProviders.includes(preferredProvider);
+
+  useEffect(() => {
+    if (availableProviders.length === 0) return;
+    if (availableProviders.includes(preferredProvider)) return;
+    setPreferredProvider(availableProviders[0]!);
+  }, [availableProviders, preferredProvider]);
 
   const opayDisabled = providerStatus ? !providerStatus.opay.checkoutConfigured : false;
   const paystackDisabled = providerStatus ? !providerStatus.paystack.checkoutConfigured : false;
@@ -85,7 +91,7 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
       <p className="mb-2 text-xs text-[var(--color-text-muted)]">
         {likesUnlocked
           ? "People who liked you are listed here in real time."
-          : "Platinum unlocks exactly who liked you. Silver adds messaging, while Gold and Diamond add privacy filters."}
+          : "Platinum unlocks exactly who liked you. Silver, Gold, and Diamond add higher-tier visibility and privacy controls."}
       </p>
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Current tier: {tierLabel}</p>
 

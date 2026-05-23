@@ -18,6 +18,7 @@ import { canSeeIncomingLikes, canViewProfile } from "../utils/membership.js";
 export const discoverRouter = Router();
 
 const CITY_REGION_MAP: Record<string, string> = {
+  lagos: "west-africa",
   "lagos island": "west-africa",
   abuja: "west-africa",
   "port harcourt": "west-africa",
@@ -53,6 +54,45 @@ const DATE_IDEAS = [
 type CompatibilityBand = "Top Pick" | "Great Match" | "Good Vibe";
 
 const normalize = (value: string) => value.trim().toLowerCase();
+
+const preferenceMatchesGender = (
+  lookingFor?: UserRecord["lookingFor"],
+  gender?: UserRecord["gender"],
+) => {
+  if (!lookingFor || lookingFor === "everyone") {
+    return true;
+  }
+
+  if (!gender) {
+    return true;
+  }
+
+  if (gender === "other") {
+    return false;
+  }
+
+  if (lookingFor === "men") {
+    return gender === "man";
+  }
+
+  if (lookingFor === "women") {
+    return gender === "woman";
+  }
+
+  return true;
+};
+
+const isDiscoverCompatible = (viewer: UserRecord, candidate: UserRecord) => {
+  if (!preferenceMatchesGender(viewer.lookingFor, candidate.gender)) {
+    return false;
+  }
+
+  if (!candidate.lookingFor || !viewer.gender) {
+    return true;
+  }
+
+  return preferenceMatchesGender(candidate.lookingFor, viewer.gender);
+};
 
 const shuffle = <T>(items: T[]) => {
   const next = [...items];
@@ -346,7 +386,14 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
       );
 
   const cards = users
-    .filter((u) => u.id !== authUserId && !excluded.has(u.id) && u.photos.length > 0 && canViewProfile(me.membershipTier, u.membershipTier))
+    .filter(
+      (u) =>
+        u.id !== authUserId
+        && !excluded.has(u.id)
+        && u.photos.length > 0
+        && canViewProfile(me.membershipTier, u.membershipTier)
+        && isDiscoverCompatible(me, u),
+    )
     .map((candidate) => {
       const scored = scoreCandidate(me, candidate);
       const base = publicUser(candidate);

@@ -1245,13 +1245,13 @@ export default function Home() {
                 ))}
               </div>
             )}
-            <a
-              href="/?auth=login"
-              onClick={markNavigationTransition}
+            <button
+              type="button"
+              onClick={() => beginLandingTransition(() => openAuthForm("login"))}
               className="tap-feedback relative z-[80] rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-[#1b1730]"
             >
               {copy.login}
-            </a>
+            </button>
           </div>
         </header>
         </div>
