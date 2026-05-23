@@ -347,7 +347,15 @@ export default function Home() {
 
   const isUnauthorizedMessage = (message: string) => {
     const lower = message.toLowerCase();
-    return message.includes("401") || lower.includes("unauthorized");
+    return (
+      message.includes("401")
+      || lower.includes("unauthorized")
+      || lower.includes("token expired")
+      || lower.includes("token invalid")
+      || lower.includes("token expired or invalid")
+      || lower.includes("invalid token")
+      || lower.includes("missing bearer token")
+    );
   };
 
   const clearSessionAndPromptLogin = () => {
@@ -388,7 +396,13 @@ export default function Home() {
       if (!isUnauthorizedMessage(message) || !refreshToken) {
         throw error;
       }
-      const nextToken = await renewAccessToken();
+      let nextToken = "";
+      try {
+        nextToken = await renewAccessToken();
+      } catch {
+        clearSessionAndPromptLogin();
+        throw new Error("Your session expired. Please log in again.");
+      }
       return await action(nextToken);
     }
   };
