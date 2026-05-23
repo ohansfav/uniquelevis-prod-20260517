@@ -39,6 +39,10 @@ const env = {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean),
+  STORE_BACKEND: process.env.STORE_BACKEND ?? "auto",
+  KV_REST_API_URL: process.env.KV_REST_API_URL ?? "",
+  KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN ?? "",
+  STORE_KV_KEY: process.env.STORE_KV_KEY ?? "unique-levis:store-snapshot:v1",
 };
 
 const assertRequiredInProduction = (name: string, value: string, invalidValues: string[] = []) => {

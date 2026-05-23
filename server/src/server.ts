@@ -15,7 +15,7 @@ import { profilesRouter } from "./routes/profiles.js";
 import { billingRouter, billingWebhookRouter } from "./routes/billing.js";
 
 const app = express();
-initStore();
+await initStore();
 
 app.use(helmet());
 app.use(

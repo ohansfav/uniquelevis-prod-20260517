@@ -37,6 +37,10 @@ Add these before first deploy:
 - `JWT_REFRESH_EXPIRES_IN=7d`
 - `ADMIN_UNLOCK_PHRASE=<your-admin-phrase>`
 - `ADMIN_ALLOWED_IPS=127.0.0.1,::1,::ffff:127.0.0.1`
+- `STORE_BACKEND=kv`
+- `KV_REST_API_URL=<vercel-kv-rest-url>`
+- `KV_REST_API_TOKEN=<vercel-kv-rest-token>`
+- `STORE_KV_KEY=unique-levis:store-snapshot:v1`
 
 Optional billing vars:
 
@@ -56,6 +60,11 @@ Optional billing vars:
 - `OPAY_PAY_METHOD` (optional)
 - `BILLING_DEFAULT_PROVIDER` (`paystack` or `opay`)
 - `BILLING_PROVIDER_TOKEN`
+
+Persistence note for launch:
+
+- On Vercel/serverless, local filesystem state is not durable across cold starts.
+- Configure Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) so accounts, profiles, matches, and refresh sessions persist.
 
 Current membership mapping:
 

@@ -245,6 +245,8 @@ const landingCopy: Record<
 };
 
 export default function Home() {
+  type BillingConfigState = Awaited<ReturnType<typeof getBillingConfig>>;
+
   const [authReady, setAuthReady] = useState(false);
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -280,6 +282,7 @@ export default function Home() {
   const [isSwiping, setIsSwiping] = useState(false);
   const [status, setStatus] = useState("Welcome to Unique Levi's. Let's find your person.");
   const [error, setError] = useState<string | null>(null);
+  const [billingConfig, setBillingConfig] = useState<BillingConfigState | null>(null);
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LandingLanguage>("English");
@@ -696,6 +699,23 @@ export default function Home() {
   }, [token, profile, hasBootstrapped]);
 
   useEffect(() => {
+    if (!authReady) return;
+    let cancelled = false;
+    void getBillingConfig()
+      .then((config) => {
+        if (cancelled) return;
+        setBillingConfig(config);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setBillingConfig(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady]);
+
+  useEffect(() => {
     if (!token || !authReady) return;
 
     const params = new URLSearchParams(window.location.search);
@@ -1044,8 +1064,9 @@ export default function Home() {
   const handleSaveProfile = async (input: Partial<PublicUser>) => {
     if (!token) return;
     try {
-      const updated = await updateMyProfile(token, input);
+      const updated = await withSessionRecovery((authToken) => updateMyProfile(authToken, input));
       setProfile(updated);
+      setCurrentUser(updated);
       setStatus("Profile updated.");
     } catch {
       setError("Could not save profile. Please try again.");
@@ -1055,10 +1076,10 @@ export default function Home() {
   const handleRequestVerification = async (photoUrl: string) => {
     if (!token) return;
     try {
-      const result = await requestProfileVerification(token, photoUrl);
+      const result = await withSessionRecovery((authToken) => requestProfileVerification(authToken, photoUrl));
       setVerificationStatus(result.status);
       setStatus(result.message);
-      const me = await getMyProfile(token);
+      const me = await withSessionRecovery((authToken) => getMyProfile(authToken));
       setProfile(me);
       setCurrentUser(me);
     } catch {
@@ -1766,6 +1787,7 @@ export default function Home() {
               likes={incomingLikes}
               likesUnlocked={likesUnlocked}
               membershipTier={profile?.membershipTier}
+              billingConfig={billingConfig}
               onUpgrade={handleUpgrade}
             />
             <MatchesPanel matches={matches} selectedMatchId={selectedMatchId} onSelectMatch={handleSelectMatch} />
@@ -1853,6 +1875,7 @@ export default function Home() {
                 likes={incomingLikes}
                 likesUnlocked={likesUnlocked}
                 membershipTier={profile?.membershipTier}
+                billingConfig={billingConfig}
                 onUpgrade={handleUpgrade}
               />
               <MatchesPanel matches={matches} selectedMatchId={selectedMatchId} onSelectMatch={handleSelectMatch} />

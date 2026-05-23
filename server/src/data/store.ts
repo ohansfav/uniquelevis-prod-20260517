@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import bcrypt from "bcryptjs";
+import { env } from "../config/env.js";
 import type {
   LikeRecord,
   MatchRecord,
@@ -18,6 +19,8 @@ const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
 
 const STORE_FILE = join(process.cwd(), "data", "store.json");
 let persistenceEnabled = true;
+let kvFlushInFlight = false;
+let pendingKvSnapshot: string | null = null;
 
 const disablePersistence = (reason: string) => {
   if (!persistenceEnabled) {
@@ -34,6 +37,77 @@ type StoreSnapshot = {
   matches: MatchRecord[];
   messages: MessageRecord[];
   refreshSessions: RefreshSessionRecord[];
+};
+
+const shouldUseKvPersistence = () => {
+  if (env.STORE_BACKEND === "memory") {
+    return false;
+  }
+  if (env.STORE_BACKEND === "kv") {
+    return Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN);
+  }
+  if (env.STORE_BACKEND === "file") {
+    return false;
+  }
+  return Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN);
+};
+
+const hasKvPersistence = shouldUseKvPersistence();
+
+const runKvCommand = async (command: unknown[]) => {
+  if (!env.KV_REST_API_URL || !env.KV_REST_API_TOKEN) {
+    throw new Error("KV credentials are missing");
+  }
+
+  const res = await fetch(env.KV_REST_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.KV_REST_API_TOKEN}`,
+    },
+    body: JSON.stringify(command),
+  });
+
+  if (!res.ok) {
+    throw new Error(`KV command failed with status ${res.status}`);
+  }
+
+  const payload = (await res.json().catch(() => null)) as { result?: unknown; error?: string } | null;
+  if (!payload) {
+    throw new Error("KV command returned invalid JSON");
+  }
+  if (typeof payload.error === "string" && payload.error.length > 0) {
+    throw new Error(payload.error);
+  }
+  return payload.result;
+};
+
+const readSnapshotFromKv = async (): Promise<Partial<StoreSnapshot> | null> => {
+  const result = await runKvCommand(["GET", env.STORE_KV_KEY]);
+  if (typeof result !== "string" || result.trim().length === 0) {
+    return null;
+  }
+  return JSON.parse(result) as Partial<StoreSnapshot>;
+};
+
+const flushKvSnapshot = async () => {
+  if (kvFlushInFlight || !pendingKvSnapshot || !persistenceEnabled) {
+    return;
+  }
+
+  kvFlushInFlight = true;
+  try {
+    while (pendingKvSnapshot && persistenceEnabled) {
+      const serialized = pendingKvSnapshot;
+      pendingKvSnapshot = null;
+      await runKvCommand(["SET", env.STORE_KV_KEY, serialized]);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown KV persistence error";
+    disablePersistence(message);
+  } finally {
+    kvFlushInFlight = false;
+  }
 };
 
 const inferDatingIntent = (userId: string): UserRecord["datingIntent"] => {
@@ -374,6 +448,26 @@ const ensureSeedUsers = () => {
   }
 };
 
+const applySnapshot = (parsed: Partial<StoreSnapshot>) => {
+  const normalizedMessages = (parsed.messages ?? []).map((m) => ({
+    ...m,
+    seenBy: Array.isArray(m.seenBy) ? m.seenBy : [m.senderId],
+  }));
+
+  users.splice(0, users.length, ...(parsed.users ?? defaultSnapshot().users));
+  ensureSeedUsers();
+  users.forEach((user) => {
+    user.membershipTier = user.membershipTier ?? "free";
+    user.verified = user.verified ?? false;
+    user.verificationStatus = user.verificationStatus ?? "none";
+    user.datingIntent = user.datingIntent ?? inferDatingIntent(user.id);
+  });
+  likes.splice(0, likes.length, ...(parsed.likes ?? []));
+  matches.splice(0, matches.length, ...(parsed.matches ?? []));
+  messages.splice(0, messages.length, ...normalizedMessages);
+  refreshSessions.splice(0, refreshSessions.length, ...(parsed.refreshSessions ?? []));
+};
+
 const writeSnapshot = () => {
   if (!persistenceEnabled) {
     return;
@@ -388,18 +482,39 @@ const writeSnapshot = () => {
   };
 
   try {
+    if (hasKvPersistence) {
+      pendingKvSnapshot = JSON.stringify(snapshot);
+      void flushKvSnapshot();
+      return;
+    }
+
     mkdirSync(dirname(STORE_FILE), { recursive: true });
     writeFileSync(STORE_FILE, JSON.stringify(snapshot, null, 2));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown filesystem error";
+    const message = error instanceof Error ? error.message : "Unknown persistence error";
     disablePersistence(message);
   }
 };
 
-export const initStore = () => {
-  // Vercel functions are immutable between deployments; only keep state in memory.
+export const initStore = async () => {
+  if (hasKvPersistence) {
+    try {
+      const parsed = await readSnapshotFromKv();
+      if (parsed) {
+        applySnapshot(parsed);
+      }
+      writeSnapshot();
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load KV snapshot";
+      disablePersistence(message);
+      return;
+    }
+  }
+
+  // Vercel functions are immutable between deployments; only keep state in memory unless KV is configured.
   if (process.env.VERCEL === "1") {
-    disablePersistence("VERCEL runtime detected");
+    disablePersistence("VERCEL runtime detected without KV persistence");
     return;
   }
 
@@ -411,24 +526,7 @@ export const initStore = () => {
   try {
     const raw = readFileSync(STORE_FILE, "utf-8");
     const parsed = JSON.parse(raw) as Partial<StoreSnapshot>;
-
-    const normalizedMessages = (parsed.messages ?? []).map((m) => ({
-      ...m,
-      seenBy: Array.isArray(m.seenBy) ? m.seenBy : [m.senderId],
-    }));
-
-    users.splice(0, users.length, ...(parsed.users ?? defaultSnapshot().users));
-    ensureSeedUsers();
-    users.forEach((user) => {
-      user.membershipTier = user.membershipTier ?? "free";
-      user.verified = user.verified ?? false;
-      user.verificationStatus = user.verificationStatus ?? "none";
-      user.datingIntent = user.datingIntent ?? inferDatingIntent(user.id);
-    });
-    likes.splice(0, likes.length, ...(parsed.likes ?? []));
-    matches.splice(0, matches.length, ...(parsed.matches ?? []));
-    messages.splice(0, messages.length, ...normalizedMessages);
-    refreshSessions.splice(0, refreshSessions.length, ...(parsed.refreshSessions ?? []));
+    applySnapshot(parsed);
 
     writeSnapshot();
   } catch {

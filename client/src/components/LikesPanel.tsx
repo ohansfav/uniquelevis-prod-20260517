@@ -7,6 +7,12 @@ type Props = {
   likes: IncomingLikeItem[];
   likesUnlocked: boolean;
   membershipTier?: MembershipTier;
+  billingConfig?: {
+    providers?: {
+      paystack: { checkoutConfigured: boolean; missing: string[] };
+      opay: { checkoutConfigured: boolean; missing: string[] };
+    };
+  } | null;
   onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => void;
 };
 
@@ -17,12 +23,51 @@ const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: s
   { plan: "diamond", label: "Diamond", price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access." },
 ];
 
-export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, onUpgrade }: Props) {
+export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [preferredProvider, setPreferredProvider] = useState<BillingProvider>("opay");
   const cards = likes.slice(0, 4);
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
+  const providerStatus = billingConfig?.providers;
+  const availableProviders: BillingProvider[] = [];
+  if (!providerStatus || providerStatus.opay.checkoutConfigured) {
+    availableProviders.push("opay");
+  }
+  if (!providerStatus || providerStatus.paystack.checkoutConfigured) {
+    availableProviders.push("paystack");
+  }
+  const selectedProviderAvailable = availableProviders.includes(preferredProvider);
+
+  const opayDisabled = providerStatus ? !providerStatus.opay.checkoutConfigured : false;
+  const paystackDisabled = providerStatus ? !providerStatus.paystack.checkoutConfigured : false;
+
+  const unavailableReason = !providerStatus
+    ? null
+    : availableProviders.length === 0
+      ? "Payments are temporarily unavailable. Please check gateway setup in admin/deployment settings."
+      : !selectedProviderAvailable
+        ? `${preferredProvider === "opay" ? "OPay" : "Paystack"} checkout is currently unavailable.`
+        : null;
+
+  const missingForProvider = providerStatus
+    ? preferredProvider === "opay"
+      ? providerStatus.opay.missing
+      : providerStatus.paystack.missing
+    : [];
+
+  const canCheckout = selectedProviderAvailable && availableProviders.length > 0;
+
+  const handleProviderChange = (provider: BillingProvider) => {
+    if (provider === "opay" && opayDisabled) return;
+    if (provider === "paystack" && paystackDisabled) return;
+    setPreferredProvider(provider);
+  };
+
+  const handleUpgradeClick = (plan: PaidMembershipTier) => {
+    if (!canCheckout) return;
+    onUpgrade?.(plan, preferredProvider);
+  };
 
   return (
     <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[0_20px_30px_rgba(27,23,48,0.1)] md:p-5">
@@ -88,35 +133,46 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setPreferredProvider("opay")}
+                onClick={() => handleProviderChange("opay")}
+                disabled={opayDisabled}
                 className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
                   preferredProvider === "opay"
                     ? "bg-[var(--color-primary)] text-white"
                     : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
-                }`}
+                } ${opayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 OPay
               </button>
               <button
                 type="button"
-                onClick={() => setPreferredProvider("paystack")}
+                onClick={() => handleProviderChange("paystack")}
+                disabled={paystackDisabled}
                 className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
                   preferredProvider === "paystack"
                     ? "bg-[var(--color-primary)] text-white"
                     : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
-                }`}
+                } ${paystackDisabled ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 Paystack
               </button>
             </div>
           </div>
+          {unavailableReason && (
+            <p className="mt-2 text-xs text-[#8a2445]">{unavailableReason}</p>
+          )}
+          {unavailableReason && missingForProvider.length > 0 && (
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Missing: {missingForProvider.join(", ")}</p>
+          )}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {upgradeOptions.map((option) => (
               <button
                 key={option.plan}
                 type="button"
-                onClick={() => onUpgrade?.(option.plan, preferredProvider)}
-                className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent}`}
+                onClick={() => handleUpgradeClick(option.plan)}
+                disabled={!canCheckout}
+                className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent} ${
+                  !canCheckout ? "cursor-not-allowed opacity-55" : ""
+                }`}
               >
                 <span className="block text-sm font-bold">{option.label} • {option.price}</span>
                 <span className="block opacity-80">{option.description}</span>
