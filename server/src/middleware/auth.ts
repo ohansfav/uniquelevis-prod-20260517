@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { ensureSessionUser } from "../data/store.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 
 declare global {
@@ -28,6 +29,8 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
       res.status(401).json({ message: "Invalid token" });
       return;
     }
+
+    ensureSessionUser(payload.sub, payload.profile);
     req.authUserId = payload.sub;
     next();
   } catch {

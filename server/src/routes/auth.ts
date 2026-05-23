@@ -2,9 +2,11 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import type { UserRecord } from "../types/models.js";
 import {
   addRefreshSession,
   createUser,
+  ensureSessionUser,
   findUserByEmail,
   findUserById,
   hasRefreshSession,
@@ -15,6 +17,22 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/
 import { requireAuth } from "../middleware/auth.js";
 
 export const authRouter = Router();
+
+const toSessionProfile = (user: UserRecord | null | undefined) => {
+  if (!user) return undefined;
+  return {
+    email: user.email,
+    firstName: user.firstName,
+    age: user.age,
+    city: user.city,
+    bio: user.bio,
+    interests: user.interests,
+    photos: user.photos,
+    membershipTier: user.membershipTier,
+    verified: user.verified,
+    verificationStatus: user.verificationStatus,
+  };
+};
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_WINDOW_MS = 10 * 60 * 1000;
@@ -133,8 +151,8 @@ authRouter.post("/auth/signup", async (req, res) => {
   }
 
   const user = await createUser(parsed.data);
-  const accessToken = signAccessToken(user.id);
-  const refreshToken = signRefreshToken(user.id);
+  const accessToken = signAccessToken(user.id, toSessionProfile(user));
+  const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
 
   res.status(201).json({
@@ -199,8 +217,8 @@ authRouter.post("/auth/login", async (req, res) => {
 
   clearFailedAttempts(attemptKey);
 
-  const accessToken = signAccessToken(user.id);
-  const refreshToken = signRefreshToken(user.id);
+  const accessToken = signAccessToken(user.id, toSessionProfile(user));
+  const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
 
   res.json({
@@ -229,8 +247,8 @@ authRouter.post("/auth/admin/login", async (req, res) => {
     return;
   }
 
-  const accessToken = signAccessToken(user.id);
-  const refreshToken = signRefreshToken(user.id);
+  const accessToken = signAccessToken(user.id, toSessionProfile(user));
+  const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
 
   res.json({
@@ -259,13 +277,13 @@ authRouter.post("/auth/refresh", (req, res) => {
       return;
     }
 
-    const user = findUserById(userId);
+    const user = findUserById(userId) ?? ensureSessionUser(userId, payload.profile);
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
 
-    const accessToken = signAccessToken(user.id);
+    const accessToken = signAccessToken(user.id, toSessionProfile(user));
     res.json({ accessToken, user: publicUser(user) });
   } catch {
     res.status(401).json({ message: "Refresh token expired or invalid" });

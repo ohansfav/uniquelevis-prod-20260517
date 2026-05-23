@@ -11,6 +11,7 @@ import type {
   UserRecord,
   VerificationStatus,
 } from "../types/models.js";
+import type { SessionProfileClaim } from "../utils/jwt.js";
 
 const seedPassword = bcrypt.hashSync("Password123!", 10);
 const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
@@ -482,6 +483,36 @@ export const findUserByEmail = (email: string) =>
   users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 
 export const findUserById = (id: string) => users.find((u) => u.id === id);
+
+export const ensureSessionUser = (userId: string, profile?: SessionProfileClaim) => {
+  const existing = findUserById(userId);
+  if (existing) {
+    return existing;
+  }
+
+  if (!profile?.email || !profile.firstName || !Number.isFinite(profile.age) || !profile.city) {
+    return null;
+  }
+
+  const created: UserRecord = {
+    id: userId,
+    email: profile.email,
+    passwordHash: "session-only",
+    firstName: profile.firstName,
+    age: profile.age,
+    city: profile.city,
+    bio: profile.bio ?? "New here and open to meaningful connections.",
+    interests: profile.interests ?? ["Music", "Movies"],
+    photos: profile.photos ?? [],
+    membershipTier: profile.membershipTier ?? "free",
+    verified: profile.verified ?? false,
+    verificationStatus: profile.verificationStatus ?? "none",
+  };
+
+  users.push(created);
+  writeSnapshot();
+  return created;
+};
 
 export const updateUserProfile = (
   userId: string,
