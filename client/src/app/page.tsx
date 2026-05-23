@@ -35,6 +35,7 @@ import {
   sendTyping,
   signup,
   updateMyProfile,
+  verifyUpgradeCheckout,
 } from "@/lib/api";
 import type { DiscoverCard, IncomingLikeItem, MatchItem, MessageItem, PaidMembershipTier, PublicUser, VerificationStatus } from "@/lib/types";
 import OnboardingFlow from "@/components/OnboardingFlow";
@@ -613,6 +614,46 @@ export default function Home() {
     if (!token || profile || hasBootstrapped) return;
     void bootstrapData(token);
   }, [token, profile, hasBootstrapped]);
+
+  useEffect(() => {
+    if (!token || !authReady) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference") ?? params.get("trxref");
+    const upgradeStatus = params.get("upgrade");
+
+    if (!reference) {
+      if (upgradeStatus === "cancelled") {
+        setStatus("Payment was cancelled.");
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, "", cleanUrl || "/");
+      }
+      return;
+    }
+
+    let cancelled = false;
+    void withSessionRecovery((authToken) => verifyUpgradeCheckout(authToken, reference))
+      .then(async (result) => {
+        if (cancelled) return;
+        const me = await withSessionRecovery((authToken) => getMyProfile(authToken));
+        setProfile(me);
+        setCurrentUser(me);
+        setStatus(`Payment verified. ${result.tier.toUpperCase()} activated.`);
+      })
+      .catch((verificationError) => {
+        if (cancelled) return;
+        const message = verificationError instanceof Error ? verificationError.message : "Unable to verify payment.";
+        setError(message);
+      })
+      .finally(() => {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, "", cleanUrl || "/");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, token]);
 
   useEffect(() => {
     if (!token || !profile) return;

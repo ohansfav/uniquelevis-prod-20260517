@@ -183,6 +183,77 @@ const completeUpgradeSchema = z.object({
   providerToken: z.string().min(1),
 });
 
+const verifyCheckoutSchema = z.object({
+  reference: z.string().min(4),
+});
+
+billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => {
+  const parsed = verifyCheckoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
+    return;
+  }
+
+  if (!env.PAYSTACK_SECRET_KEY) {
+    res.status(501).json({ message: "Paystack secret key is not configured" });
+    return;
+  }
+
+  const userId = req.authUserId!;
+
+  try {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(parsed.data.reference)}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => "");
+      res.status(502).json({ message: `Paystack verification failed: ${details || response.statusText}` });
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      status: boolean;
+      data?: {
+        status?: string;
+        metadata?: { userId?: string; plan?: "platinum" | "silver" | "gold" | "diamond" };
+      };
+    };
+
+    const paid = payload.data?.status === "success";
+    const metadataUserId = payload.data?.metadata?.userId;
+    const plan = payload.data?.metadata?.plan;
+
+    if (!paid) {
+      res.status(409).json({ message: "Transaction is not successful yet" });
+      return;
+    }
+
+    if (!plan) {
+      res.status(422).json({ message: "Missing plan metadata on verified transaction" });
+      return;
+    }
+
+    if (!metadataUserId || metadataUserId !== userId) {
+      res.status(403).json({ message: "This transaction does not belong to the authenticated user" });
+      return;
+    }
+
+    const updated = setMembershipTier(userId, plan);
+    if (!updated) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.json({ ok: true, tier: plan, reference: parsed.data.reference });
+  } catch {
+    res.status(502).json({ message: "Unable to verify payment with Paystack" });
+  }
+});
+
 billingRouter.post("/billing/complete-upgrade", (req, res) => {
   // This endpoint is a safe server-side hook for wiring webhook confirmation later.
   // It is intentionally protected by a shared token for compatibility fallback.

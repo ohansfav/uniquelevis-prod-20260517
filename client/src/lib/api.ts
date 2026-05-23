@@ -375,6 +375,26 @@ export const createUpgradeCheckout = async (
   return (await res.json()) as { ok: boolean; checkoutUrl: string | null; sessionId: string };
 };
 
+export const verifyUpgradeCheckout = async (
+  token: string,
+  reference: string,
+) => {
+  const res = await fetch(`${API_BASE}/billing/verify-checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reference }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Unable to verify payment"));
+  }
+
+  return (await res.json()) as { ok: boolean; tier: PaidMembershipTier; reference: string };
+};
+
 export const getBillingConfig = async () => {
   const res = await fetch(`${API_BASE}/billing/config`, {
     cache: "no-store",
