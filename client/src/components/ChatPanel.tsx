@@ -10,6 +10,7 @@ type Props = {
   isTyping: boolean;
   typingName: string | null;
   onTypingChange: (isTyping: boolean) => void;
+  lockReason?: string | null;
 };
 
 export default function ChatPanel({
@@ -22,6 +23,7 @@ export default function ChatPanel({
   isTyping,
   typingName,
   onTypingChange,
+  lockReason = null,
 }: Props) {
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? null;
 
@@ -76,9 +78,16 @@ export default function ChatPanel({
         <p className="mb-2 text-xs text-[var(--color-text-muted)]">{typingName} is typing...</p>
       )}
 
+      {selectedMatch && lockReason && (
+        <p className="mb-2 rounded-xl border border-amber-300/60 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
+          {lockReason}
+        </p>
+      )}
+
       <form
         className="flex gap-2"
         onSubmit={async (event) => {
+          if (lockReason) return;
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
           const text = String(formData.get("text") ?? "").trim();
@@ -96,12 +105,13 @@ export default function ChatPanel({
         <input
           className="input"
           name="text"
-          placeholder="Type a message"
+          placeholder={lockReason ? "Messaging locked for this match" : "Type a message"}
           onChange={(e) => onTypingChange(e.currentTarget.value.trim().length > 0)}
+          disabled={Boolean(lockReason) || !selectedMatchId}
         />
         <button
           type="submit"
-          disabled={!selectedMatchId}
+          disabled={!selectedMatchId || Boolean(lockReason)}
           className="romance-gradient rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
           Send

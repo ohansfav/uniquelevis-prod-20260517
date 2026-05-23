@@ -271,6 +271,7 @@ export default function Home() {
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [chatLockByMatch, setChatLockByMatch] = useState<Record<string, string>>({});
   const [typingByMatch, setTypingByMatch] = useState<Record<string, string | null>>({});
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("none");
   const [loading, setLoading] = useState(false);
@@ -296,6 +297,7 @@ export default function Home() {
   const activeCard = useMemo(() => cards[0], [cards]);
   const isAuthenticated = token.length > 0;
   const typingName = selectedMatchId ? typingByMatch[selectedMatchId] ?? null : null;
+  const selectedChatLockReason = selectedMatchId ? chatLockByMatch[selectedMatchId] ?? null : null;
   const copy = landingCopy[selectedLanguage];
   const splashOverlay = (
     <div className="splash-overlay fixed inset-0 z-50 grid place-items-center bg-[#0e0c17] px-6 text-white pointer-events-none">
@@ -356,6 +358,27 @@ export default function Home() {
       || lower.includes("invalid token")
       || lower.includes("missing bearer token")
     );
+  };
+
+  const isChatMembershipLockMessage = (message: string) => {
+    const lower = message.toLowerCase();
+    return (
+      lower.includes("upgrade to silver to chat")
+      || lower.includes("only accepts chats from silver")
+      || lower.includes("only accepts chats from gold and diamond")
+    );
+  };
+
+  const setMatchChatLock = (matchId: string, reason: string) => {
+    setChatLockByMatch((prev) => ({ ...prev, [matchId]: reason }));
+  };
+
+  const clearMatchChatLock = (matchId: string) => {
+    setChatLockByMatch((prev) => {
+      if (!(matchId in prev)) return prev;
+      const { [matchId]: _ignored, ...rest } = prev;
+      return rest;
+    });
   };
 
   const clearSessionAndPromptLogin = () => {
@@ -474,9 +497,20 @@ export default function Home() {
       if (nextMatches.length > 0) {
         const firstMatchId = nextMatches[0].id;
         setSelectedMatchId(firstMatchId);
-        const initialMessages = await getMessages(authToken, firstMatchId);
-        setMessages(initialMessages);
-        await markMessagesRead(authToken, firstMatchId);
+        try {
+          const initialMessages = await getMessages(authToken, firstMatchId);
+          clearMatchChatLock(firstMatchId);
+          setMessages(initialMessages);
+          await markMessagesRead(authToken, firstMatchId);
+        } catch (messageError) {
+          const message = messageError instanceof Error ? messageError.message : "Failed to fetch messages";
+          if (isChatMembershipLockMessage(message)) {
+            setMatchChatLock(firstMatchId, message);
+            setMessages([]);
+          } else {
+            throw messageError;
+          }
+        }
         setMobileTab("swipe");
       } else {
         setSelectedMatchId(null);
@@ -489,6 +523,7 @@ export default function Home() {
       setLikesUnlocked(false);
       setMatches([]);
       setMessages([]);
+      setChatLockByMatch({});
       setSelectedMatchId(null);
       setProfile(null);
       setCurrentUser(null);
@@ -759,6 +794,7 @@ export default function Home() {
     setMatches([]);
     setSelectedMatchId(null);
     setMessages([]);
+    setChatLockByMatch({});
     setTypingByMatch({});
     setVerificationStatus("none");
     setMobileTab("swipe");
@@ -814,20 +850,26 @@ export default function Home() {
   }, [token, selectedMatchId, streamRetryTick]);
 
   useEffect(() => {
-    if (!token || !selectedMatchId) return;
+    if (!token || !selectedMatchId || selectedChatLockReason) return;
 
     const poller = window.setInterval(() => {
       void withSessionRecovery((authToken) => getMessages(authToken, selectedMatchId))
         .then((nextMessages) => {
+          clearMatchChatLock(selectedMatchId);
           setMessages(nextMessages);
         })
-        .catch(() => {
+        .catch((pollError) => {
+          const message = pollError instanceof Error ? pollError.message : "";
+          if (isChatMembershipLockMessage(message)) {
+            setMatchChatLock(selectedMatchId, message);
+            setMessages([]);
+          }
           // stream remains primary channel, polling is fallback only
         });
     }, 6000);
 
     return () => window.clearInterval(poller);
-  }, [token, selectedMatchId, refreshToken]);
+  }, [token, selectedMatchId, refreshToken, selectedChatLockReason]);
 
   const handleSelectMatch = async (matchId: string) => {
     if (!token) return;
@@ -835,12 +877,19 @@ export default function Home() {
     setMobileTab("chat");
     try {
       const nextMessages = await withSessionRecovery((authToken) => getMessages(authToken, matchId));
+      clearMatchChatLock(matchId);
       setMessages(nextMessages);
       await withSessionRecovery((authToken) => markMessagesRead(authToken, matchId));
       const nextMatches = await withSessionRecovery((authToken) => getMatches(authToken));
       setMatches(nextMatches);
     } catch (matchError) {
       const message = matchError instanceof Error ? matchError.message : "Could not load messages. Please try again.";
+      if (isChatMembershipLockMessage(message)) {
+        setMatchChatLock(matchId, message);
+        setMessages([]);
+        setStatus(message);
+        return;
+      }
       setError(message);
       if (isUnauthorizedMessage(message)) {
         clearSessionAndPromptLogin();
@@ -892,19 +941,30 @@ export default function Home() {
 
   const handleSendMessage = async (text: string) => {
     if (!token || !selectedMatchId) return;
+    if (selectedChatLockReason) {
+      setStatus(selectedChatLockReason);
+      return;
+    }
     try {
       const sent = await withSessionRecovery((authToken) => sendMessage(authToken, selectedMatchId, text));
+      clearMatchChatLock(selectedMatchId);
       setMessages((prev) => (prev.some((item) => item.id === sent.id) ? prev : [...prev, sent]));
       const nextMatches = await withSessionRecovery((authToken) => getMatches(authToken));
       setMatches(nextMatches);
     } catch (messageError) {
       const message = messageError instanceof Error ? messageError.message : "Message could not be sent. Please try again.";
+      if (isChatMembershipLockMessage(message)) {
+        setMatchChatLock(selectedMatchId, message);
+        setStatus(message);
+        return;
+      }
       setError(message);
     }
   };
 
   const handleTypingChange = async (isTyping: boolean) => {
     if (!token || !selectedMatchId) return;
+    if (selectedChatLockReason) return;
     try {
       await withSessionRecovery((authToken) => sendTyping(authToken, selectedMatchId, isTyping));
     } catch {
@@ -976,9 +1036,21 @@ export default function Home() {
 
         setSelectedMatchId(response.match.id);
         setMobileTab("chat");
-        const nextMessages = await getMessages(token, response.match.id);
-        setMessages(nextMessages);
-        await markMessagesRead(token, response.match.id);
+        try {
+          const nextMessages = await getMessages(token, response.match.id);
+          clearMatchChatLock(response.match.id);
+          setMessages(nextMessages);
+          await markMessagesRead(token, response.match.id);
+        } catch (messageError) {
+          const message = messageError instanceof Error ? messageError.message : "Could not load messages for this match.";
+          if (isChatMembershipLockMessage(message)) {
+            setMatchChatLock(response.match.id, message);
+            setMessages([]);
+            setStatus(message);
+          } else {
+            throw messageError;
+          }
+        }
       } else {
         if (type === "like") setStatus(`Liked ${swipedName}. Keep swiping for a match.`);
         if (type === "super_like") setStatus(`Super liked ${swipedName}. Fingers crossed.`);
@@ -1647,6 +1719,7 @@ export default function Home() {
               isTyping={Boolean(typingName)}
               typingName={typingName}
               onTypingChange={handleTypingChange}
+              lockReason={selectedChatLockReason}
             />
           </div>
         </div>
@@ -1739,6 +1812,7 @@ export default function Home() {
                 isTyping={Boolean(typingName)}
                 typingName={typingName}
                 onTypingChange={handleTypingChange}
+                lockReason={selectedChatLockReason}
               />
             </>
           )}
