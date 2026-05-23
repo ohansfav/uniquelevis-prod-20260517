@@ -158,22 +158,26 @@ billingRouter.get("/billing/config", (_req, res) => {
     diamond: env.PAYSTACK_AMOUNT_DIAMOND,
   };
 
-  const missing: string[] = [];
-  if (!env.PAYSTACK_SECRET_KEY) missing.push("PAYSTACK_SECRET_KEY");
-  if (!env.PAYSTACK_WEBHOOK_SECRET) missing.push("PAYSTACK_WEBHOOK_SECRET");
-  if (!env.PAYSTACK_PUBLIC_KEY) missing.push("PAYSTACK_PUBLIC_KEY");
-  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) missing.push("PAYSTACK_AMOUNT_PLATINUM");
-  if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) missing.push("PAYSTACK_AMOUNT_SILVER");
-  if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) missing.push("PAYSTACK_AMOUNT_GOLD");
-  if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) missing.push("PAYSTACK_AMOUNT_DIAMOND");
+  const checkoutMissing: string[] = [];
+  if (!env.PAYSTACK_SECRET_KEY) checkoutMissing.push("PAYSTACK_SECRET_KEY");
+  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) checkoutMissing.push("PAYSTACK_AMOUNT_PLATINUM");
+  if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) checkoutMissing.push("PAYSTACK_AMOUNT_SILVER");
+  if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) checkoutMissing.push("PAYSTACK_AMOUNT_GOLD");
+  if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) checkoutMissing.push("PAYSTACK_AMOUNT_DIAMOND");
+
+  const optionalMissing: string[] = [];
+  if (!env.PAYSTACK_WEBHOOK_SECRET) optionalMissing.push("PAYSTACK_WEBHOOK_SECRET");
+  if (!env.PAYSTACK_PUBLIC_KEY) optionalMissing.push("PAYSTACK_PUBLIC_KEY");
 
   res.json({
     provider: "paystack",
-    checkoutConfigured: missing.length === 0,
+    checkoutConfigured: checkoutMissing.length === 0,
     webhookConfigured: Boolean(env.PAYSTACK_WEBHOOK_SECRET),
     publicKeyConfigured: Boolean(env.PAYSTACK_PUBLIC_KEY),
     planAmounts,
-    missing,
+    missing: [...checkoutMissing, ...optionalMissing],
+    checkoutMissing,
+    optionalMissing,
   });
 });
 

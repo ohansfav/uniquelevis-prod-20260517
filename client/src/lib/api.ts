@@ -411,6 +411,8 @@ export const getBillingConfig = async () => {
     publicKeyConfigured: boolean;
     planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
     missing: string[];
+    checkoutMissing: string[];
+    optionalMissing: string[];
   };
 };
 
