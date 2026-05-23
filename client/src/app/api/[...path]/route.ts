@@ -6,6 +6,19 @@ const BACKEND_BASE = process.env.API_PROXY_TARGET
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] as const;
 
+const HOP_BY_HOP_RESPONSE_HEADERS = [
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+  "content-encoding",
+  "content-length",
+] as const;
+
 const filterHeaders = (request: NextRequest) => {
   const headers = new Headers();
   for (const [key, value] of request.headers.entries()) {
@@ -39,6 +52,7 @@ const proxy = async (request: NextRequest, path: string[]) => {
   const upstream = await fetch(targetUrl, init);
 
   const responseHeaders = new Headers(upstream.headers);
+  HOP_BY_HOP_RESPONSE_HEADERS.forEach((header) => responseHeaders.delete(header));
   responseHeaders.set("cache-control", "no-store");
 
   return new Response(upstream.body, {
