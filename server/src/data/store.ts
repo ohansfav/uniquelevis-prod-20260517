@@ -36,6 +36,16 @@ type StoreSnapshot = {
   refreshSessions: RefreshSessionRecord[];
 };
 
+const inferDatingIntent = (userId: string): UserRecord["datingIntent"] => {
+  if (userId === "u-admin") return "serious";
+  const numericPart = Number((userId.match(/(\d+)$/)?.[1] ?? "0"));
+  if (!Number.isFinite(numericPart)) return "serious";
+  const mod = numericPart % 3;
+  if (mod === 0) return "short-term";
+  if (mod === 1) return "serious";
+  return "long-term";
+};
+
 const adminUser: UserRecord = {
   id: "u-admin",
   email: "admin@uniquelevis.com",
@@ -413,7 +423,7 @@ export const initStore = () => {
       user.membershipTier = user.membershipTier ?? "free";
       user.verified = user.verified ?? false;
       user.verificationStatus = user.verificationStatus ?? "none";
-      user.datingIntent = user.datingIntent ?? "serious";
+      user.datingIntent = user.datingIntent ?? inferDatingIntent(user.id);
     });
     likes.splice(0, likes.length, ...(parsed.likes ?? []));
     matches.splice(0, matches.length, ...(parsed.matches ?? []));

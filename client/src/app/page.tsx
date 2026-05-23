@@ -516,6 +516,7 @@ export default function Home() {
       setMatches(nextMatches);
       setProfile(me);
       setCurrentUser(me);
+      setNeedsOnboarding((me.photos?.length ?? 0) === 0);
       setIncomingLikes(nextLikes.likes);
       setLikesCount(nextLikes.count);
       setLikesUnlocked(nextLikes.canViewLikes);
