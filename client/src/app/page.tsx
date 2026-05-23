@@ -292,6 +292,7 @@ export default function Home() {
   const [humanChallengeId, setHumanChallengeId] = useState("");
   const [humanAnswer, setHumanAnswer] = useState("");
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
+  const streamRecoveryInFlightRef = useRef(false);
   const streamFailureCountRef = useRef(0);
   const [streamRetryTick, setStreamRetryTick] = useState(0);
 
@@ -396,16 +397,23 @@ export default function Home() {
   };
 
   const handleStreamFailure = () => {
-    streamFailureCountRef.current += 1;
+    if (streamRecoveryInFlightRef.current) {
+      return;
+    }
 
-    if (streamFailureCountRef.current < 3) {
+    streamFailureCountRef.current += 1;
+    streamRecoveryInFlightRef.current = true;
+
+    if (streamFailureCountRef.current < 2) {
       window.setTimeout(() => {
+        streamRecoveryInFlightRef.current = false;
         setStreamRetryTick((value) => value + 1);
       }, 1200);
       return;
     }
 
     if (!refreshToken) {
+      streamRecoveryInFlightRef.current = false;
       setError("Your session expired. Please log in again.");
       clearSessionAndPromptLogin();
       return;
@@ -414,9 +422,11 @@ export default function Home() {
     void renewAccessToken()
       .then(() => {
         streamFailureCountRef.current = 0;
+        streamRecoveryInFlightRef.current = false;
         setStreamRetryTick((value) => value + 1);
       })
       .catch(() => {
+        streamRecoveryInFlightRef.current = false;
         setError("Your session expired. Please log in again.");
         clearSessionAndPromptLogin();
       });

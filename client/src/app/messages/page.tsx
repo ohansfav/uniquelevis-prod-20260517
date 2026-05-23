@@ -26,6 +26,8 @@ export default function MessagesPage() {
   const [authReady, setAuthReady] = useState(false);
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
   const streamRecoveryInFlightRef = useRef(false);
+  const streamFailureCountRef = useRef(0);
+  const [streamRetryTick, setStreamRetryTick] = useState(0);
 
   const isUnauthorizedMessage = (message: string) => {
     const lower = message.toLowerCase();
@@ -152,6 +154,32 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!token) return;
 
+    const handleStreamFailure = () => {
+      if (streamRecoveryInFlightRef.current) return;
+      streamRecoveryInFlightRef.current = true;
+      streamFailureCountRef.current += 1;
+
+      if (streamFailureCountRef.current < 2) {
+        window.setTimeout(() => {
+          streamRecoveryInFlightRef.current = false;
+          setStreamRetryTick((value) => value + 1);
+        }, 1200);
+        return;
+      }
+
+      void renewAccessToken()
+        .then(() => {
+          streamFailureCountRef.current = 0;
+          streamRecoveryInFlightRef.current = false;
+          setStreamRetryTick((value) => value + 1);
+        })
+        .catch(() => {
+          streamRecoveryInFlightRef.current = false;
+          setError("Your session expired. Please log in again.");
+          clearSessionAndPromptLogin();
+        });
+    };
+
     let closed = false;
 
     const source = openMessageStream(
@@ -192,23 +220,19 @@ export default function MessagesPage() {
     source.onerror = () => {
       if (closed) return;
       source.close();
-      if (streamRecoveryInFlightRef.current) return;
-      streamRecoveryInFlightRef.current = true;
-      void renewAccessToken()
-        .catch(() => {
-          setError("Your session expired. Please log in again.");
-          clearSessionAndPromptLogin();
-        })
-        .finally(() => {
-          streamRecoveryInFlightRef.current = false;
-        });
+      handleStreamFailure();
     };
 
     return () => {
       closed = true;
       source.close();
     };
-  }, [token, selectedMatchId]);
+  }, [token, selectedMatchId, streamRetryTick]);
+
+  useEffect(() => {
+    if (!token) return;
+    streamFailureCountRef.current = 0;
+  }, [token]);
 
   const handleSelectMatch = async (matchId: string) => {
     if (!token) return;
