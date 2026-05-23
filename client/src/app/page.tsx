@@ -813,9 +813,12 @@ export default function Home() {
       setRefreshToken(auth.refreshToken);
       setCurrentUser(auth.user);
       setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
-      await bootstrapData(auth.accessToken);
       if (authMode === "signup") {
+        // Open onboarding immediately after signup; defer full bootstrap until after profile completion.
+        setProfile(auth.user);
         setNeedsOnboarding(true);
+      } else {
+        await bootstrapData(auth.accessToken);
       }
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "We could not sign you in right now. Please check your details and try again.";
@@ -1694,6 +1697,7 @@ export default function Home() {
                   setProfile(updated);
                   setCurrentUser(updated);
                   setNeedsOnboarding(false);
+                  void bootstrapData(token);
                 }}
               />
             )}
