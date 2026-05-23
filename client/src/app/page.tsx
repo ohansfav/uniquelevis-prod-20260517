@@ -263,11 +263,11 @@ export default function Home() {
   const [refreshToken, setRefreshToken] = useState<string>("");
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [profile, setProfile] = useState<PublicUser | null>(null);
-  const [email, setEmail] = useState("ava@example.com");
-  const [password, setPassword] = useState("Password123!");
-  const [firstName, setFirstName] = useState("Levi");
-  const [age, setAge] = useState(24);
-  const [city, setCity] = useState("Lagos");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [ageInput, setAgeInput] = useState("");
+  const [city, setCity] = useState("");
   const [cards, setCards] = useState<DiscoverCard[]>([]);
   const [incomingLikes, setIncomingLikes] = useState<IncomingLikeItem[]>([]);
   const [likesCount, setLikesCount] = useState(0);
@@ -646,18 +646,27 @@ export default function Home() {
   useEffect(() => {
     if (authMode !== "login") return;
     let mounted = true;
-    void getHumanCheckChallenge()
-      .then((challenge) => {
-        if (!mounted) return;
-        setHumanPrompt(challenge.prompt);
-        setHumanChallengeId(challenge.challengeId);
-        setHumanAnswer("");
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setHumanPrompt("5 + 3 = ?");
-        setHumanChallengeId("");
-      });
+    let retries = 0;
+    const fetchChallenge = () => {
+      void getHumanCheckChallenge()
+        .then((challenge) => {
+          if (!mounted) return;
+          setHumanPrompt(challenge.prompt);
+          setHumanChallengeId(challenge.challengeId);
+          setHumanAnswer("");
+        })
+        .catch(() => {
+          if (!mounted) return;
+          if (retries < 3) {
+            retries++;
+            window.setTimeout(fetchChallenge, 1500 * retries);
+          } else {
+            setHumanPrompt("5 + 3 = ?");
+            setHumanChallengeId("");
+          }
+        });
+    };
+    fetchChallenge();
 
     return () => {
       mounted = false;
@@ -807,7 +816,7 @@ export default function Home() {
               challengeId: humanChallengeId,
               challengeAnswer: humanAnswer,
             })
-          : await signup({ email, password, firstName, age, city });
+          : await signup({ email, password, firstName, age: Number(ageInput) || 18, city });
 
       setToken(auth.accessToken);
       setRefreshToken(auth.refreshToken);
@@ -1644,12 +1653,13 @@ export default function Home() {
                     <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">Age</span>
                     <input
                       className="input"
-                      value={age}
-                      onChange={(e) => setAge(Number(e.target.value))}
-                      min={18}
-                      max={80}
-                      type="number"
-                      placeholder="18 - 80"
+                      value={ageInput}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^0-9]/g, "");
+                        setAgeInput(v);
+                      }}
+                      inputMode="numeric"
+                      placeholder="Your age (18–80)"
                     />
                   </label>
                 </>
