@@ -1,4 +1,5 @@
-export type MembershipTier = "free" | "silver" | "gold" | "diamond";
+export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
+export type PaidMembershipTier = Exclude<MembershipTier, "free">;
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
 
 export type PublicUser = {
@@ -52,6 +53,13 @@ export type TypingEventPayload = {
   byUserId: string;
   byName: string;
   isTyping: boolean;
+};
+
+export type IncomingLikeItem = {
+  id: string;
+  createdAt: string;
+  type: "like" | "super_like";
+  byUser: PublicUser;
 };
 
 export type VerificationRequest = {

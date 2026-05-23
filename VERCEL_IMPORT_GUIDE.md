@@ -43,10 +43,19 @@ Optional billing vars:
 - `PAYSTACK_SECRET_KEY`
 - `PAYSTACK_WEBHOOK_SECRET`
 - `PAYSTACK_PUBLIC_KEY`
-- `PAYSTACK_AMOUNT_SILVER` (kobo, e.g. `500000`)
-- `PAYSTACK_AMOUNT_GOLD` (kobo, e.g. `1000000`)
-- `PAYSTACK_AMOUNT_DIAMOND` (kobo, e.g. `2000000`)
+- `PAYSTACK_AMOUNT_PLATINUM` (kobo, e.g. `50000` for ₦500)
+- `PAYSTACK_AMOUNT_SILVER` (kobo, e.g. `100000` for ₦1,000)
+- `PAYSTACK_AMOUNT_GOLD` (kobo, e.g. `300000` for ₦3,000)
+- `PAYSTACK_AMOUNT_DIAMOND` (kobo, e.g. `500000` for ₦5,000)
 - `BILLING_PROVIDER_TOKEN`
+
+Current membership mapping:
+
+- `free`: default signup tier; can browse standard public profiles and swipe
+- `platinum`: unlocks exact "who liked you"
+- `silver`: unlocks likes visibility plus direct messaging
+- `gold`: includes Silver and only allows Silver, Gold, and Diamond members to view or message you
+- `diamond`: includes Silver and only allows Gold and Diamond members to view or message you
 
 After deployment, copy API domain, e.g. `https://your-api.vercel.app`.
 

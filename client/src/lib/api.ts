@@ -3,9 +3,11 @@ import type {
   AdminUser,
   AuthResponse,
   DiscoverCard,
+  IncomingLikeItem,
   MatchItem,
   MembershipTier,
   MessageItem,
+  PaidMembershipTier,
   PublicUser,
   TypingEventPayload,
   VerificationRequest,
@@ -353,7 +355,7 @@ export const openMessageStream = (
 
 export const createUpgradeCheckout = async (
   token: string,
-  plan: "silver" | "gold" | "diamond",
+  plan: PaidMembershipTier,
 ) => {
   const res = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
@@ -387,8 +389,23 @@ export const getBillingConfig = async () => {
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
-    planAmounts: { silver: number; gold: number; diamond: number };
+    planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
     missing: string[];
+  };
+};
+
+export const getIncomingLikes = async (token: string) => {
+  const res = await fetch(`${API_BASE}/likes/incoming`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to fetch incoming likes"));
+  }
+  return (await res.json()) as {
+    count: number;
+    canViewLikes: boolean;
+    likes: IncomingLikeItem[];
   };
 };
 
@@ -467,7 +484,7 @@ export const updateUserTierByAdmin = async (token: string, userId: string, tier:
 export const runAdminBillingTestUpgrade = async (
   token: string,
   userId: string,
-  tier: Exclude<MembershipTier, "free">,
+  tier: PaidMembershipTier,
 ) => {
   const res = await fetch(`${API_BASE}/admin/billing/test-upgrade`, {
     method: "POST",
@@ -482,5 +499,5 @@ export const runAdminBillingTestUpgrade = async (
     throw new Error(await readErrorMessage(res, "Failed to run billing test"));
   }
 
-  return (await res.json()) as { ok: boolean; userId: string; tier: Exclude<MembershipTier, "free">; mode: string };
+  return (await res.json()) as { ok: boolean; userId: string; tier: PaidMembershipTier; mode: string };
 };

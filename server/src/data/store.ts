@@ -513,7 +513,7 @@ export const createUser = async (input: {
     city: input.city,
     bio: input.bio ?? "New here and open to meaningful connections.",
     interests: ["Music", "Movies"],
-    photos: ["https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=900&q=80"],
+    photos: [],
     membershipTier: "free",
     verified: false,
     verificationStatus: "none",

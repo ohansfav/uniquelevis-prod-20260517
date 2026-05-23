@@ -1,4 +1,4 @@
-export type MembershipTier = "free" | "silver" | "gold" | "diamond";
+export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
 
 export type PublicUser = {

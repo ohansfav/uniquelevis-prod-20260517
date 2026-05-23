@@ -11,19 +11,6 @@ const INTERESTS = [
   "Dancing", "Technology", "Cars", "Writing", "Business", "Design",
 ];
 
-const PRESET_PHOTOS = [
-  { url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=280&q=50", label: "Sofia" },
-  { url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=280&q=50", label: "Zara" },
-  { url: "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=280&q=50", label: "Chioma" },
-  { url: "https://images.unsplash.com/photo-1488716820095-cbe80883c496?auto=format&fit=crop&w=280&q=50", label: "Amara" },
-  { url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=280&q=50", label: "Tolu" },
-  { url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=280&q=50", label: "Ngozi" },
-  { url: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=280&q=50", label: "Noah" },
-  { url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=280&q=50", label: "Chidi" },
-  { url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=280&q=50", label: "Emeka" },
-  { url: "https://images.unsplash.com/photo-1534030347209-467a5b0ad3e6?auto=format&fit=crop&w=280&q=50", label: "Seun" },
-];
-
 type Step = 1 | 2 | 3 | 4;
 
 interface Props {
@@ -34,7 +21,6 @@ interface Props {
 
 export default function OnboardingFlow({ token, profile, onComplete }: Props) {
   const [step, setStep] = useState<Step>(1);
-  const [selectedPhoto, setSelectedPhoto] = useState<string>(profile.photos[0] ?? "");
   const [customUrl, setCustomUrl] = useState("");
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const [bio, setBio] = useState(profile.bio ?? "");
@@ -49,7 +35,7 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const photoToUse = customUrl.trim() || selectedPhoto;
+  const photoToUse = customUrl.trim();
 
   const toggleInterest = (tag: string) => {
     setInterests((prev) =>
@@ -65,7 +51,6 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
       .then((result) => {
         setPhotoUploadError(null);
         setCustomUrl(result);
-        setSelectedPhoto("");
       })
       .catch((uploadError) => {
         const message = uploadError instanceof Error ? uploadError.message : "Could not read image file. Try another photo.";
@@ -143,7 +128,7 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
           {step === 1 && (
             <>
               <h2 className="mb-1 text-2xl font-black text-white">Add your photo</h2>
-              <p className="mb-5 text-sm text-white/55">Pick one below or paste any image URL — this is what people will see first.</p>
+              <p className="mb-5 text-sm text-white/55">Upload your real photo or paste your own image URL. We do not assign automatic profile photos.</p>
 
               {/* Preview */}
               {photoToUse && (
@@ -155,35 +140,12 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
                 </div>
               )}
 
-              {/* Grid of preset avatars */}
-              <div className="mb-4 grid grid-cols-5 gap-2">
-                {PRESET_PHOTOS.map((p) => (
-                  <button
-                    key={p.url}
-                    type="button"
-                    onClick={() => { setSelectedPhoto(p.url); setCustomUrl(""); }}
-                    className={`relative h-14 w-full overflow-hidden rounded-xl border-2 transition ${
-                      selectedPhoto === p.url && !customUrl
-                        ? "border-[#ff4f7a] shadow-[0_0_0_2px_rgba(255,79,122,0.35)]"
-                        : "border-white/15 opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.url} alt={p.label} className="h-full w-full object-cover" />
-                    {selectedPhoto === p.url && !customUrl && (
-                      <span className="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#ff4f7a] text-[8px] text-white">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <p className="mb-2 text-xs text-white/40 text-center">— or paste your own image URL —</p>
+              <p className="mb-2 text-xs text-white/40 text-center">Paste your own image URL if you do not want to upload from this device.</p>
               <input
                 type="url"
                 value={customUrl}
                 onChange={(e) => {
                   setCustomUrl(e.target.value);
-                  setSelectedPhoto("");
                   setPhotoUploadError(null);
                 }}
                 placeholder="https://example.com/your-photo.jpg"

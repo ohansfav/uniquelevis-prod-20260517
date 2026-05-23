@@ -19,6 +19,7 @@ import {
   createUpgradeCheckout,
   getDiscoverCards,
   getHumanCheckChallenge,
+  getIncomingLikes,
   getMatches,
   getMessages,
   getMyProfile,
@@ -35,7 +36,7 @@ import {
   signup,
   updateMyProfile,
 } from "@/lib/api";
-import type { DiscoverCard, MatchItem, MessageItem, PublicUser, VerificationStatus } from "@/lib/types";
+import type { DiscoverCard, IncomingLikeItem, MatchItem, MessageItem, PaidMembershipTier, PublicUser, VerificationStatus } from "@/lib/types";
 import OnboardingFlow from "@/components/OnboardingFlow";
 
 type AuthMode = "login" | "signup";
@@ -263,6 +264,9 @@ export default function Home() {
   const [age, setAge] = useState(24);
   const [city, setCity] = useState("Lagos");
   const [cards, setCards] = useState<DiscoverCard[]>([]);
+  const [incomingLikes, setIncomingLikes] = useState<IncomingLikeItem[]>([]);
+  const [likesCount, setLikesCount] = useState(0);
+  const [likesUnlocked, setLikesUnlocked] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -289,7 +293,6 @@ export default function Home() {
   }, []);
 
   const activeCard = useMemo(() => cards[0], [cards]);
-  const likesCount = Math.max(5, matches.length + 3);
   const isAuthenticated = token.length > 0;
   const typingName = selectedMatchId ? typingByMatch[selectedMatchId] ?? null : null;
   const copy = landingCopy[selectedLanguage];
@@ -434,16 +437,20 @@ export default function Home() {
 
   const bootstrapData = async (authToken: string) => {
     try {
-      const [nextCards, nextMatches, me] = await Promise.all([
+      const [nextCards, nextMatches, me, nextLikes] = await Promise.all([
         getDiscoverCards(authToken, getDiscoverQuery()),
         getMatches(authToken),
         getMyProfile(authToken),
+        getIncomingLikes(authToken),
       ]);
 
       setCards(nextCards);
       setMatches(nextMatches);
       setProfile(me);
       setCurrentUser(me);
+      setIncomingLikes(nextLikes.likes);
+      setLikesCount(nextLikes.count);
+      setLikesUnlocked(nextLikes.canViewLikes);
       setVerificationStatus(me.verificationStatus ?? "none");
 
       const verify = await getMyVerificationStatus(authToken);
@@ -462,6 +469,9 @@ export default function Home() {
       }
     } catch (loadError) {
       setCards([]);
+      setIncomingLikes([]);
+      setLikesCount(0);
+      setLikesUnlocked(false);
       setMatches([]);
       setMessages([]);
       setSelectedMatchId(null);
@@ -687,6 +697,9 @@ export default function Home() {
     setRefreshToken("");
     setCurrentUser(null);
     setProfile(null);
+    setIncomingLikes([]);
+    setLikesCount(0);
+    setLikesUnlocked(false);
     setCards([]);
     setMatches([]);
     setSelectedMatchId(null);
@@ -844,7 +857,7 @@ export default function Home() {
     }
   };
 
-  const handleUpgrade = async (plan: "silver" | "gold" | "diamond") => {
+  const handleUpgrade = async (plan: PaidMembershipTier) => {
     if (!token) return;
 
     try {
@@ -901,6 +914,10 @@ export default function Home() {
         setStatus(`It's a match with ${swipedName}. Jump into chat and say hello.`);
         const nextMatches = await getMatches(token);
         setMatches(nextMatches);
+        const nextLikes = await getIncomingLikes(token);
+        setIncomingLikes(nextLikes.likes);
+        setLikesCount(nextLikes.count);
+        setLikesUnlocked(nextLikes.canViewLikes);
 
         setSelectedMatchId(response.match.id);
         setMobileTab("chat");
@@ -1557,7 +1574,13 @@ export default function Home() {
 
           <div className="space-y-5">
             <ExplorePanel activeLane={activeExploreLane} users={cards} onSelectLane={handleSelectExploreLane} />
-            <LikesPanel likesCount={likesCount} matches={matches} onUpgrade={handleUpgrade} />
+            <LikesPanel
+              likesCount={likesCount}
+              likes={incomingLikes}
+              likesUnlocked={likesUnlocked}
+              membershipTier={profile?.membershipTier}
+              onUpgrade={handleUpgrade}
+            />
             <MatchesPanel matches={matches} selectedMatchId={selectedMatchId} onSelectMatch={handleSelectMatch} />
             <ChatPanel
               matches={matches}
@@ -1637,7 +1660,13 @@ export default function Home() {
 
           {mobileTab === "likes" && (
             <>
-              <LikesPanel likesCount={likesCount} matches={matches} onUpgrade={handleUpgrade} />
+              <LikesPanel
+                likesCount={likesCount}
+                likes={incomingLikes}
+                likesUnlocked={likesUnlocked}
+                membershipTier={profile?.membershipTier}
+                onUpgrade={handleUpgrade}
+              />
               <MatchesPanel matches={matches} selectedMatchId={selectedMatchId} onSelectMatch={handleSelectMatch} />
             </>
           )}

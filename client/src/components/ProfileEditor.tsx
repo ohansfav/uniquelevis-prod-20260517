@@ -1,6 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import type { PublicUser } from "@/lib/types";
 import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
+import { getProfileImage } from "@/lib/image";
 
 type Props = {
   profile: PublicUser | null;
@@ -227,7 +228,7 @@ export default function ProfileEditor({
           <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={profile.photos[0]} alt={`${profile.firstName} preview`} className="h-full w-full object-cover" />
+              <img src={getProfileImage(profile.photos[0], profile.firstName)} alt={`${profile.firstName} preview`} className="h-full w-full object-cover" />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 text-white">
                 <p className="text-xl font-semibold">{profile.firstName}, {profile.age}</p>
                 <p className="text-sm text-white/80">{profile.city}</p>

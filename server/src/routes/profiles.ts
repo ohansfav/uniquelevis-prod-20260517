@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { findUserById, publicUser, submitVerification, updateUserProfile } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
+import { canViewProfile } from "../utils/membership.js";
 
 export const profilesRouter = Router();
 
@@ -15,11 +16,23 @@ profilesRouter.get("/profiles/me", requireAuth, (req, res) => {
 });
 
 profilesRouter.get("/profiles/:userId", requireAuth, (req, res) => {
+  const viewer = findUserById(req.authUserId!);
+  if (!viewer) {
+    res.status(404).json({ message: "Authenticated user not found" });
+    return;
+  }
+
   const user = findUserById(req.params.userId);
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
   }
+
+  if (!canViewProfile(viewer.membershipTier, user.membershipTier)) {
+    res.status(403).json({ message: "This profile is only visible to higher membership tiers." });
+    return;
+  }
+
   res.json({ profile: publicUser(user) });
 });
 

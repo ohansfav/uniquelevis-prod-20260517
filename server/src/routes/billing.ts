@@ -14,7 +14,7 @@ const webhookPayloadSchema = z.object({
     metadata: z
       .object({
         userId: z.string().optional(),
-        plan: z.enum(["silver", "gold", "diamond"]).optional(),
+        plan: z.enum(["platinum", "silver", "gold", "diamond"]).optional(),
       })
       .optional(),
   }),
@@ -78,12 +78,13 @@ billingWebhookRouter.post("/billing/webhook/paystack", express.raw({ type: "appl
 });
 
 const checkoutSchema = z.object({
-  plan: z.enum(["silver", "gold", "diamond"]),
+  plan: z.enum(["platinum", "silver", "gold", "diamond"]),
   successPath: z.string().optional(),
   cancelPath: z.string().optional(),
 });
 
-const resolveAmount = (plan: "silver" | "gold" | "diamond") => {
+const resolveAmount = (plan: "platinum" | "silver" | "gold" | "diamond") => {
+  if (plan === "platinum") return env.PAYSTACK_AMOUNT_PLATINUM;
   if (plan === "silver") return env.PAYSTACK_AMOUNT_SILVER;
   if (plan === "gold") return env.PAYSTACK_AMOUNT_GOLD;
   return env.PAYSTACK_AMOUNT_DIAMOND;
@@ -151,6 +152,7 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
 
 billingRouter.get("/billing/config", (_req, res) => {
   const planAmounts = {
+    platinum: env.PAYSTACK_AMOUNT_PLATINUM,
     silver: env.PAYSTACK_AMOUNT_SILVER,
     gold: env.PAYSTACK_AMOUNT_GOLD,
     diamond: env.PAYSTACK_AMOUNT_DIAMOND,
@@ -160,6 +162,7 @@ billingRouter.get("/billing/config", (_req, res) => {
   if (!env.PAYSTACK_SECRET_KEY) missing.push("PAYSTACK_SECRET_KEY");
   if (!env.PAYSTACK_WEBHOOK_SECRET) missing.push("PAYSTACK_WEBHOOK_SECRET");
   if (!env.PAYSTACK_PUBLIC_KEY) missing.push("PAYSTACK_PUBLIC_KEY");
+  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) missing.push("PAYSTACK_AMOUNT_PLATINUM");
   if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) missing.push("PAYSTACK_AMOUNT_SILVER");
   if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) missing.push("PAYSTACK_AMOUNT_GOLD");
   if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) missing.push("PAYSTACK_AMOUNT_DIAMOND");
@@ -176,7 +179,7 @@ billingRouter.get("/billing/config", (_req, res) => {
 
 const completeUpgradeSchema = z.object({
   userId: z.string().min(1),
-  plan: z.enum(["silver", "gold", "diamond"]),
+  plan: z.enum(["platinum", "silver", "gold", "diamond"]),
   providerToken: z.string().min(1),
 });
 

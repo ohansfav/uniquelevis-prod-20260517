@@ -12,9 +12,10 @@ import {
   runAdminBillingTestUpgrade,
   updateUserTierByAdmin,
 } from "@/lib/api";
-import type { AdminStats, AdminUser, MembershipTier, VerificationRequest } from "@/lib/types";
+import { getProfileImage } from "@/lib/image";
+import type { AdminStats, AdminUser, MembershipTier, PaidMembershipTier, VerificationRequest } from "@/lib/types";
 
-const tiers: MembershipTier[] = ["free", "silver", "gold", "diamond"];
+const tiers: MembershipTier[] = ["free", "platinum", "silver", "gold", "diamond"];
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -28,11 +29,11 @@ export default function AdminPage() {
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
-    planAmounts: { silver: number; gold: number; diamond: number };
+    planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
     missing: string[];
   } | null>(null);
   const [billingTestUserId, setBillingTestUserId] = useState("");
-  const [billingTestTier, setBillingTestTier] = useState<"silver" | "gold" | "diamond">("silver");
+  const [billingTestTier, setBillingTestTier] = useState<PaidMembershipTier>("platinum");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("God Eyes online. Track users, tiers, and verification decisions.");
@@ -199,8 +200,9 @@ export default function AdminPage() {
             <select
               className="input"
               value={billingTestTier}
-              onChange={(event) => setBillingTestTier(event.target.value as "silver" | "gold" | "diamond")}
+              onChange={(event) => setBillingTestTier(event.target.value as PaidMembershipTier)}
             >
+              <option value="platinum">Platinum</option>
               <option value="silver">Silver</option>
               <option value="gold">Gold</option>
               <option value="diamond">Diamond</option>
@@ -213,7 +215,7 @@ export default function AdminPage() {
               Run Test Upgrade
             </button>
             <p className="text-[11px] text-[var(--color-text-muted)]">
-              Amounts (kobo): S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
+              Amounts (kobo): P {billingConfig?.planAmounts.platinum ?? 0} / S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
             </p>
           </div>
         </section>
@@ -233,12 +235,12 @@ export default function AdminPage() {
                     <p className="text-xs text-[var(--color-text-muted)]">{item.email} • {item.city}</p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <img
-                        src={item.pendingVerificationPhoto ?? item.currentPhotos[0]}
+                        src={getProfileImage(item.pendingVerificationPhoto ?? item.currentPhotos[0], item.firstName)}
                         alt="Pending verification"
                         className="h-24 w-full rounded-xl object-cover"
                       />
                       <img
-                        src={item.currentPhotos[0]}
+                        src={getProfileImage(item.currentPhotos[0], item.firstName)}
                         alt="Current profile"
                         className="h-24 w-full rounded-xl object-cover"
                       />
@@ -269,7 +271,7 @@ export default function AdminPage() {
               {users.map((user) => (
                 <div key={user.id} className="rounded-2xl border border-[var(--color-border)] p-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <img src={user.photos[0]} alt={user.firstName} className="h-12 w-12 rounded-full object-cover" />
+                    <img src={getProfileImage(user.photos[0], user.firstName, 96, 55)} alt={user.firstName} className="h-12 w-12 rounded-full object-cover" />
                     <div>
                       <p className="font-semibold text-[var(--color-primary)]">{user.firstName}, {user.age}</p>
                       <p className="text-xs text-[var(--color-text-muted)]">{user.email} • {user.city}</p>

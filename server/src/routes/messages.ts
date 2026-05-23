@@ -10,6 +10,7 @@ import {
   matches,
 } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
+import { getMessageAccessError } from "../utils/membership.js";
 
 export const messagesRouter = Router();
 
@@ -19,6 +20,28 @@ type Subscriber = {
 };
 
 const subscribers: Subscriber[] = [];
+
+const getMessagingAccessIssue = (userId: string, matchId: string) => {
+  const match = matches.find((item) => item.id === matchId);
+  if (!match) {
+    return { message: "Match not found", status: 404 as const };
+  }
+
+  const me = findUserById(userId);
+  const otherUserId = match.userA === userId ? match.userB : match.userA;
+  const other = findUserById(otherUserId);
+
+  if (!me || !other) {
+    return { message: "Match user not found", status: 404 as const };
+  }
+
+  const accessError = getMessageAccessError(me.membershipTier, other.membershipTier);
+  if (accessError) {
+    return { message: accessError, status: 403 as const };
+  }
+
+  return null;
+};
 
 const emitToUser = (userId: string, event: string, payload: unknown) => {
   const body = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
@@ -57,6 +80,12 @@ messagesRouter.get("/messages/:matchId", requireAuth, (req, res) => {
     return;
   }
 
+  const accessIssue = getMessagingAccessIssue(userId, matchId);
+  if (accessIssue) {
+    res.status(accessIssue.status).json({ message: accessIssue.message });
+    return;
+  }
+
   res.json({ messages: getMessagesByMatch(matchId) });
 });
 
@@ -66,6 +95,12 @@ messagesRouter.post("/messages/:matchId/read", requireAuth, (req, res) => {
 
   if (!isUserInMatch(matchId, userId)) {
     res.status(403).json({ message: "You are not part of this match" });
+    return;
+  }
+
+  const accessIssue = getMessagingAccessIssue(userId, matchId);
+  if (accessIssue) {
+    res.status(accessIssue.status).json({ message: accessIssue.message });
     return;
   }
 
@@ -83,6 +118,12 @@ messagesRouter.post("/messages/:matchId", requireAuth, (req: Request, res: Respo
 
   if (!isUserInMatch(matchId, userId)) {
     res.status(403).json({ message: "You are not part of this match" });
+    return;
+  }
+
+  const accessIssue = getMessagingAccessIssue(userId, matchId);
+  if (accessIssue) {
+    res.status(accessIssue.status).json({ message: accessIssue.message });
     return;
   }
 
@@ -122,6 +163,12 @@ messagesRouter.post("/messages/:matchId/typing", requireAuth, (req, res) => {
 
   if (!isUserInMatch(matchId, userId)) {
     res.status(403).json({ message: "You are not part of this match" });
+    return;
+  }
+
+  const accessIssue = getMessagingAccessIssue(userId, matchId);
+  if (accessIssue) {
+    res.status(accessIssue.status).json({ message: accessIssue.message });
     return;
   }
 

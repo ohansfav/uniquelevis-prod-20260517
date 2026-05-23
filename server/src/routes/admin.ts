@@ -81,7 +81,7 @@ adminRouter.post("/admin/verifications/:userId/reject", requireAdmin, (req, res)
 
 // PUT /admin/users/:userId/tier
 const tierSchema = z.object({
-  tier: z.enum(["free", "silver", "gold", "diamond"]),
+  tier: z.enum(["free", "platinum", "silver", "gold", "diamond"]),
 });
 
 adminRouter.put("/admin/users/:userId/tier", requireAdmin, (req, res) => {
@@ -101,7 +101,7 @@ adminRouter.put("/admin/users/:userId/tier", requireAdmin, (req, res) => {
 
 const billingTestSchema = z.object({
   userId: z.string().min(1),
-  tier: z.enum(["silver", "gold", "diamond"]),
+  tier: z.enum(["platinum", "silver", "gold", "diamond"]),
 });
 
 adminRouter.post("/admin/billing/test-upgrade", requireAdmin, (req, res) => {

@@ -6,11 +6,13 @@ import {
   findUserById,
   findMutualLike,
   likes,
+  matches,
   publicUser,
   users,
 } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { UserRecord } from "../types/models.js";
+import { canSeeIncomingLikes, canViewProfile } from "../utils/membership.js";
 
 export const discoverRouter = Router();
 
@@ -343,7 +345,7 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
       );
 
   const cards = users
-    .filter((u) => u.id !== authUserId && !excluded.has(u.id))
+    .filter((u) => u.id !== authUserId && !excluded.has(u.id) && u.photos.length > 0 && canViewProfile(me.membershipTier, u.membershipTier))
     .map((candidate) => {
       const scored = scoreCandidate(me, candidate);
       const base = publicUser(candidate);
@@ -393,6 +395,50 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
   res.json({ cards: responseCards });
 });
 
+discoverRouter.get("/likes/incoming", requireAuth, (req, res) => {
+  const authUserId = req.authUserId!;
+  const me = findUserById(authUserId);
+
+  if (!me) {
+    res.status(404).json({ message: "Authenticated user not found" });
+    return;
+  }
+
+  const matchedPairs = new Set(
+    matches.map((match) => [match.userA, match.userB].sort().join("::")),
+  );
+
+  const incoming = likes
+    .filter((item) => item.targetUserId === authUserId && (item.type === "like" || item.type === "super_like"))
+    .filter((item) => !matchedPairs.has([item.byUserId, item.targetUserId].sort().join("::")))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const canViewLikes = canSeeIncomingLikes(me.membershipTier);
+  const visibleLikes = canViewLikes
+    ? incoming
+        .map((item) => {
+          const byUser = findUserById(item.byUserId);
+          if (!byUser || !canViewProfile(me.membershipTier, byUser.membershipTier)) {
+            return null;
+          }
+
+          return {
+            id: item.id,
+            createdAt: item.createdAt,
+            type: item.type,
+            byUser: publicUser(byUser),
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  res.json({
+    count: incoming.length,
+    canViewLikes,
+    likes: visibleLikes,
+  });
+});
+
 const swipeSchema = z.object({
   targetUserId: z.string().min(1),
   type: z.enum(["like", "skip", "super_like"]),
@@ -405,29 +451,40 @@ discoverRouter.post("/interactions/swipe", requireAuth, (req, res) => {
     return;
   }
 
-  const targetExists = users.some((u) => u.id === parsed.data.targetUserId);
-  if (!targetExists) {
+  const me = findUserById(req.authUserId!);
+  if (!me) {
+    res.status(404).json({ message: "Authenticated user not found" });
+    return;
+  }
+
+  const targetUser = users.find((u) => u.id === parsed.data.targetUserId);
+  if (!targetUser) {
     res.status(404).json({ message: "Target user not found" });
     return;
   }
 
-  const me = req.authUserId!;
-  createLike(me, parsed.data.targetUserId, parsed.data.type);
+  if (!canViewProfile(me.membershipTier, targetUser.membershipTier)) {
+    res.status(403).json({ message: "This profile is only visible to higher membership tiers." });
+    return;
+  }
+
+  const meId = req.authUserId!;
+  createLike(meId, parsed.data.targetUserId, parsed.data.type);
 
   let match = null;
   if (parsed.data.type === "like" || parsed.data.type === "super_like") {
-    const existingMutual = findMutualLike(me, parsed.data.targetUserId);
+    const existingMutual = findMutualLike(meId, parsed.data.targetUserId);
     if (!existingMutual) {
       // Demo-friendly behavior: some profiles like back so users can experience matching/chat.
       const shouldLikeBack = parsed.data.type === "super_like" || Math.random() < 0.4;
       if (shouldLikeBack) {
-        createLike(parsed.data.targetUserId, me, "like");
+        createLike(parsed.data.targetUserId, meId, "like");
       }
     }
 
-    const mutual = findMutualLike(me, parsed.data.targetUserId);
+    const mutual = findMutualLike(meId, parsed.data.targetUserId);
     if (mutual) {
-      match = createMatchIfNeeded(me, parsed.data.targetUserId);
+      match = createMatchIfNeeded(meId, parsed.data.targetUserId);
     }
   }
 

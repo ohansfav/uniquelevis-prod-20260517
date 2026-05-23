@@ -1,5 +1,5 @@
 import type { MatchItem } from "@/lib/types";
-import { optimizeUnsplash } from "@/lib/image";
+import { getProfileImage } from "@/lib/image";
 
 type Props = {
   matches: MatchItem[];
@@ -35,7 +35,7 @@ export default function MatchesPanel({ matches, selectedMatchId, onSelectMatch }
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={optimizeUnsplash(item.otherUser.photos[0], 140, 50)}
+                src={getProfileImage(item.otherUser.photos[0], item.otherUser.firstName, 140, 50)}
                 alt={item.otherUser.firstName}
                 className="h-12 w-12 rounded-full object-cover"
                 loading="lazy"

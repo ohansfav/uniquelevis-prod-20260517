@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { DiscoverCard } from "@/lib/types";
-import { optimizeUnsplash } from "@/lib/image";
+import { getProfileImage } from "@/lib/image";
 
 type Props = {
   user: DiscoverCard;
@@ -49,6 +49,7 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
   const tierClass =
     user.membershipTier === "diamond" ? "bg-cyan-100 text-cyan-900"
     : user.membershipTier === "gold" ? "bg-amber-100 text-amber-900"
+    : user.membershipTier === "platinum" ? "bg-orange-100 text-orange-900"
     : user.membershipTier === "silver" ? "bg-slate-100 text-slate-800"
     : "bg-white/85 text-gray-900";
 
@@ -70,7 +71,7 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
       {/* Background photo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={optimizeUnsplash(currentPhoto, 560, 70)}
+        src={getProfileImage(currentPhoto, user.firstName, 560, 70)}
         alt={`${user.firstName}`}
         className="absolute inset-0 h-full w-full object-cover"
         loading="eager"
