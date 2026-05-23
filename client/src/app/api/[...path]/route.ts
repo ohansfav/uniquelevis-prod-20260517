@@ -23,7 +23,12 @@ const filterHeaders = (request: NextRequest) => {
   const headers = new Headers();
   for (const [key, value] of request.headers.entries()) {
     const lower = key.toLowerCase();
-    if (lower === "host" || lower === "content-length") {
+    if (
+      lower === "host" ||
+      lower === "content-length" ||
+      lower === "connection" ||
+      lower === "accept-encoding"
+    ) {
       continue;
     }
     headers.set(key, value);
@@ -54,8 +59,9 @@ const proxy = async (request: NextRequest, path: string[]) => {
   const responseHeaders = new Headers(upstream.headers);
   HOP_BY_HOP_RESPONSE_HEADERS.forEach((header) => responseHeaders.delete(header));
   responseHeaders.set("cache-control", "no-store");
+  const body = await upstream.arrayBuffer();
 
-  return new Response(upstream.body, {
+  return new Response(body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: responseHeaders,
