@@ -1,5 +1,6 @@
 export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
+export type RelationshipIntent = "short-term" | "serious" | "long-term";
 
 export type PublicUser = {
   id: string;
@@ -11,6 +12,7 @@ export type PublicUser = {
   photos: string[];
   gender?: "man" | "woman" | "other";
   lookingFor?: "men" | "women" | "everyone";
+  datingIntent?: RelationshipIntent;
   membershipTier?: MembershipTier;
   verified?: boolean;
   verificationStatus?: VerificationStatus;

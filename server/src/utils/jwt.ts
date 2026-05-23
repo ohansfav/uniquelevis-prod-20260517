@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import type { MembershipTier, VerificationStatus } from "../types/models.js";
+import type { MembershipTier, RelationshipIntent, VerificationStatus } from "../types/models.js";
 
 const accessExpiresIn = env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions["expiresIn"];
 const refreshExpiresIn = env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"];
@@ -13,6 +13,7 @@ export type SessionProfileClaim = {
   bio?: string;
   interests?: string[];
   photos?: string[];
+  datingIntent?: RelationshipIntent;
   membershipTier?: MembershipTier;
   verified?: boolean;
   verificationStatus?: VerificationStatus;

@@ -45,6 +45,7 @@ const updateProfileSchema = z.object({
   photos: z.array(z.string().min(1).max(2_000_000)).min(1).max(6).optional(),
   gender: z.enum(["man", "woman", "other"]).optional(),
   lookingFor: z.enum(["men", "women", "everyone"]).optional(),
+  datingIntent: z.enum(["short-term", "serious", "long-term"]).optional(),
 });
 
 profilesRouter.put("/profiles/me", requireAuth, (req, res) => {

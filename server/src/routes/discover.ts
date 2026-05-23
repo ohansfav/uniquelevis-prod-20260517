@@ -8,6 +8,7 @@ import {
   likes,
   matches,
   publicUser,
+  refreshSessions,
   users,
 } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -186,7 +187,7 @@ const buildModeReasons = (
 };
 
 const applyDiscoverFilters = (
-  cards: DiscoverFeedCard[],
+  cards: Array<DiscoverFeedCard & { datingIntent?: "short-term" | "serious" | "long-term" }>,
   query: {
     mode?: string;
     distance?: string;
@@ -223,11 +224,11 @@ const applyDiscoverFilters = (
   if (typeof query.intent === "string") {
     const intent = query.intent.trim().toLowerCase();
     if (intent === "serious") {
-      next = next.filter((card) => card.matchScore >= 70);
+      next = next.filter((card) => card.datingIntent === "serious");
     } else if (intent === "casual") {
-      next = next.filter((card) => card.matchScore < 70);
+      next = next.filter((card) => card.datingIntent === "short-term");
     } else if (intent === "long-term") {
-      next = next.filter((card) => card.matchScore >= 80 || Boolean(card.verified));
+      next = next.filter((card) => card.datingIntent === "long-term");
     }
   }
 
@@ -357,6 +358,7 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
         aiReasons: scored.reasons,
         dateIdea: scored.dateIdea,
         distanceLabel: scored.distanceLabel,
+        datingIntent: candidate.datingIntent ?? "serious",
       };
     })
     .sort((a, b) => b.matchScore - a.matchScore);
@@ -376,7 +378,13 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
     mode: typeof req.query.mode === "string" ? req.query.mode : undefined,
     intent: typeof req.query.intent === "string" ? req.query.intent : undefined,
     verifiedOnly: typeof req.query.verifiedOnly === "string" ? req.query.verifiedOnly : undefined,
-  }).slice(0, 20);
+  })
+    .sort((a, b) => {
+      const aActive = refreshSessions.some((s) => s.userId === a.id) ? 1 : 0;
+      const bActive = refreshSessions.some((s) => s.userId === b.id) ? 1 : 0;
+      return bActive - aActive;
+    })
+    .slice(0, 20);
 
   const queryMode = typeof req.query.mode === "string" ? req.query.mode.trim().toLowerCase() : "for-you";
   const queryIntent = typeof req.query.intent === "string" ? req.query.intent.trim().toLowerCase() : "all";

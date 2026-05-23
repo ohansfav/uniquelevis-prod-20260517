@@ -413,6 +413,7 @@ export const initStore = () => {
       user.membershipTier = user.membershipTier ?? "free";
       user.verified = user.verified ?? false;
       user.verificationStatus = user.verificationStatus ?? "none";
+      user.datingIntent = user.datingIntent ?? "serious";
     });
     likes.splice(0, likes.length, ...(parsed.likes ?? []));
     matches.splice(0, matches.length, ...(parsed.matches ?? []));
@@ -433,6 +434,9 @@ export const publicUser = (user: UserRecord): PublicUser => ({
   bio: user.bio,
   interests: user.interests,
   photos: user.photos,
+  gender: user.gender,
+  lookingFor: user.lookingFor,
+  datingIntent: user.datingIntent ?? "serious",
   membershipTier: user.membershipTier ?? "free",
   verified: user.verified ?? false,
   verificationStatus: user.verificationStatus ?? "none",
@@ -504,6 +508,7 @@ export const ensureSessionUser = (userId: string, profile?: SessionProfileClaim)
     bio: profile.bio ?? "New here and open to meaningful connections.",
     interests: profile.interests ?? ["Music", "Movies"],
     photos: profile.photos ?? [],
+    datingIntent: profile.datingIntent ?? "serious",
     membershipTier: profile.membershipTier ?? "free",
     verified: profile.verified ?? false,
     verificationStatus: profile.verificationStatus ?? "none",
@@ -516,7 +521,7 @@ export const ensureSessionUser = (userId: string, profile?: SessionProfileClaim)
 
 export const updateUserProfile = (
   userId: string,
-  input: Partial<Pick<UserRecord, "firstName" | "age" | "city" | "bio" | "interests" | "photos">>,
+  input: Partial<Pick<UserRecord, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor" | "datingIntent">>,
 ) => {
   const user = users.find((u) => u.id === userId);
   if (!user) return null;
@@ -545,6 +550,7 @@ export const createUser = async (input: {
     bio: input.bio ?? "New here and open to meaningful connections.",
     interests: ["Music", "Movies"],
     photos: [],
+    datingIntent: "serious",
     membershipTier: "free",
     verified: false,
     verificationStatus: "none",

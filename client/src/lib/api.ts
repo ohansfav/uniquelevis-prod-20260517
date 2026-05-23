@@ -239,7 +239,7 @@ export const getMyProfile = async (token: string) => {
 
 export const updateMyProfile = async (
   token: string,
-  payload: Partial<Pick<PublicUser, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor">>,
+  payload: Partial<Pick<PublicUser, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor" | "datingIntent">>,
 ) => {
   const res = await fetch(`${API_BASE}/profiles/me`, {
     method: "PUT",

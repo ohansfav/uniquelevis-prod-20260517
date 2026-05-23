@@ -10,11 +10,11 @@ type Props = {
   onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => void;
 };
 
-const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string }> = [
-  { plan: "platinum", label: "Platinum", accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you." },
-  { plan: "silver", label: "Silver", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility plus messaging." },
-  { plan: "gold", label: "Gold", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Messaging plus Gold privacy gate." },
-  { plan: "diamond", label: "Diamond", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access." },
+const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string; price: string }> = [
+  { plan: "platinum", label: "Platinum", price: "N500", accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you." },
+  { plan: "silver", label: "Silver", price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility plus messaging." },
+  { plan: "gold", label: "Gold", price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Messaging plus Gold privacy gate." },
+  { plan: "diamond", label: "Diamond", price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access." },
 ];
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, onUpgrade }: Props) {
@@ -118,7 +118,7 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
                 onClick={() => onUpgrade?.(option.plan, preferredProvider)}
                 className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent}`}
               >
-                <span className="block text-sm font-bold">{option.label}</span>
+                <span className="block text-sm font-bold">{option.label} • {option.price}</span>
                 <span className="block opacity-80">{option.description}</span>
               </button>
             ))}

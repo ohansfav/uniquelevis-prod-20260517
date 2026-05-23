@@ -31,6 +31,9 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
   const [lookingFor, setLookingFor] = useState<"men" | "women" | "everyone">(
     (profile.lookingFor as "men" | "women" | "everyone") ?? "everyone"
   );
+  const [datingIntent, setDatingIntent] = useState<"short-term" | "serious" | "long-term">(
+    profile.datingIntent ?? "serious"
+  );
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +80,7 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
         interests,
         gender,
         lookingFor,
+        datingIntent,
       });
       onComplete(updated);
     } catch {
@@ -266,6 +270,30 @@ export default function OnboardingFlow({ token, profile, onComplete }: Props) {
                       </button>
                     )
                   )}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <span className="mb-3 block text-xs font-bold uppercase tracking-widest text-white/50">Relationship goal</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ["short-term", "Short-term"],
+                    ["serious", "Serious"],
+                    ["long-term", "Long-term"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setDatingIntent(value)}
+                      className={`rounded-2xl border px-3 py-3 text-sm font-semibold transition ${
+                        datingIntent === value
+                          ? "border-[#ff4f7a] bg-[#ff4f7a]/15 text-white"
+                          : "border-white/15 bg-white/5 text-white/60 hover:border-white/30"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </>

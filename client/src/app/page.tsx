@@ -864,7 +864,11 @@ export default function Home() {
             return [...prev, payload.message];
           });
         }
-        void getMatches(token).then(setMatches);
+        void withSessionRecovery((authToken) => getMatches(authToken))
+          .then(setMatches)
+          .catch(() => {
+            // Non-blocking realtime refresh
+          });
       },
       (typingPayload) => {
         setTypingByMatch((prev) => ({
@@ -1068,12 +1072,12 @@ export default function Home() {
     setCards((prev) => prev.slice(1));
 
     try {
-      const response = await sendSwipe(token, swipedId, type);
+      const response = await withSessionRecovery((authToken) => sendSwipe(authToken, swipedId, type));
       if (response.match) {
         setStatus(`It's a match with ${swipedName}. Jump into chat and say hello.`);
-        const nextMatches = await getMatches(token);
+        const nextMatches = await withSessionRecovery((authToken) => getMatches(authToken));
         setMatches(nextMatches);
-        const nextLikes = await getIncomingLikes(token);
+        const nextLikes = await withSessionRecovery((authToken) => getIncomingLikes(authToken));
         setIncomingLikes(nextLikes.likes);
         setLikesCount(nextLikes.count);
         setLikesUnlocked(nextLikes.canViewLikes);
@@ -1081,10 +1085,10 @@ export default function Home() {
         setSelectedMatchId(response.match.id);
         setMobileTab("chat");
         try {
-          const nextMessages = await getMessages(token, response.match.id);
+          const nextMessages = await withSessionRecovery((authToken) => getMessages(authToken, response.match!.id));
           clearMatchChatLock(response.match.id);
           setMessages(nextMessages);
-          await markMessagesRead(token, response.match.id);
+          await withSessionRecovery((authToken) => markMessagesRead(authToken, response.match!.id));
         } catch (messageError) {
           const message = messageError instanceof Error ? messageError.message : "Could not load messages for this match.";
           if (isChatMembershipLockMessage(message)) {
@@ -1102,10 +1106,17 @@ export default function Home() {
       }
 
       if (previousCount <= 1) {
-        await loadDiscoverDeck(token, { silent: true, allowRecycle: true });
+        const refreshedToken = await withSessionRecovery(async (authToken) => authToken);
+        await loadDiscoverDeck(refreshedToken, { silent: true, allowRecycle: true });
       }
-    } catch {
-      setError("Your swipe did not save. Please try once more.");
+    } catch (swipeError) {
+      const message = swipeError instanceof Error ? swipeError.message : "";
+      if (isUnauthorizedMessage(message)) {
+        setError("Your session expired. Please log in again.");
+        clearSessionAndPromptLogin();
+      } else {
+        setError("Your swipe did not save. Please try once more.");
+      }
     } finally {
       setIsSwiping(false);
     }

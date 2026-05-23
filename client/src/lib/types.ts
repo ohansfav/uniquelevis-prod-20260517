@@ -13,6 +13,7 @@ export type PublicUser = {
   photos: string[];
   gender?: "man" | "woman" | "other";
   lookingFor?: "men" | "women" | "everyone";
+  datingIntent?: "short-term" | "serious" | "long-term";
   membershipTier?: MembershipTier;
   verified?: boolean;
   verificationStatus?: VerificationStatus;

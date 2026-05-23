@@ -28,6 +28,7 @@ const toSessionProfile = (user: UserRecord | null | undefined) => {
     bio: user.bio,
     interests: user.interests,
     photos: user.photos,
+    datingIntent: user.datingIntent,
     membershipTier: user.membershipTier,
     verified: user.verified,
     verificationStatus: user.verificationStatus,
