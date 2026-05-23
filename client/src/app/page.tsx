@@ -39,6 +39,7 @@ import {
   verifyUpgradeCheckout,
 } from "@/lib/api";
 import type { DiscoverCard, IncomingLikeItem, MatchItem, MessageItem, PaidMembershipTier, PublicUser, VerificationStatus } from "@/lib/types";
+import type { BillingProvider } from "@/lib/types";
 import OnboardingFlow from "@/components/OnboardingFlow";
 
 type AuthMode = "login" | "signup";
@@ -1005,16 +1006,18 @@ export default function Home() {
     }
   };
 
-  const handleUpgrade = async (plan: PaidMembershipTier) => {
+  const handleUpgrade = async (plan: PaidMembershipTier, selectedProvider?: BillingProvider) => {
     if (!token) return;
 
     try {
-      let provider: "paystack" | "opay" | undefined;
-      try {
-        const config = await getBillingConfig();
-        provider = config.provider;
-      } catch {
-        provider = undefined;
+      let provider: BillingProvider | undefined = selectedProvider;
+      if (!provider) {
+        try {
+          const config = await getBillingConfig();
+          provider = config.provider;
+        } catch {
+          provider = undefined;
+        }
       }
 
       const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan, provider));

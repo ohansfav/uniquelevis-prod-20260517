@@ -2,6 +2,7 @@ import type {
   AdminStats,
   AdminUser,
   AuthResponse,
+  BillingProvider,
   DiscoverCard,
   IncomingLikeItem,
   MatchItem,
@@ -13,8 +14,6 @@ import type {
   VerificationRequest,
   VerificationStatus,
 } from "./types";
-
-export type BillingProvider = "paystack" | "opay";
 
 // ALWAYS use the backend URL - no conditionals that might fail
 // In production (deployed), all requests go to the backend

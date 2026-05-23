@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
+import type { BillingProvider, IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
   likes: IncomingLikeItem[];
   likesUnlocked: boolean;
   membershipTier?: MembershipTier;
-  onUpgrade?: (plan: PaidMembershipTier) => void;
+  onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => void;
 };
 
 const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string }> = [
@@ -19,6 +19,7 @@ const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: s
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [preferredProvider, setPreferredProvider] = useState<BillingProvider>("opay");
   const cards = likes.slice(0, 4);
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
@@ -82,12 +83,39 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
           <p className="text-sm text-[var(--color-text)]">
             Upgrade your membership to unlock likes visibility, messaging, and premium privacy controls.
           </p>
+          <div className="mt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Payment Provider</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPreferredProvider("opay")}
+                className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                  preferredProvider === "opay"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+                }`}
+              >
+                OPay
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferredProvider("paystack")}
+                className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                  preferredProvider === "paystack"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+                }`}
+              >
+                Paystack
+              </button>
+            </div>
+          </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {upgradeOptions.map((option) => (
               <button
                 key={option.plan}
                 type="button"
-                onClick={() => onUpgrade?.(option.plan)}
+                onClick={() => onUpgrade?.(option.plan, preferredProvider)}
                 className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent}`}
               >
                 <span className="block text-sm font-bold">{option.label}</span>
