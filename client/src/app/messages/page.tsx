@@ -25,10 +25,19 @@ export default function MessagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
+  const streamRecoveryInFlightRef = useRef(false);
 
   const isUnauthorizedMessage = (message: string) => {
     const lower = message.toLowerCase();
-    return message.includes("401") || lower.includes("unauthorized");
+    return (
+      message.includes("401")
+      || lower.includes("unauthorized")
+      || lower.includes("token expired")
+      || lower.includes("token invalid")
+      || lower.includes("token expired or invalid")
+      || lower.includes("invalid token")
+      || lower.includes("missing bearer token")
+    );
   };
 
   const clearSessionAndPromptLogin = () => {
@@ -183,10 +192,16 @@ export default function MessagesPage() {
     source.onerror = () => {
       if (closed) return;
       source.close();
-      void renewAccessToken().catch(() => {
-        setError("Your session expired. Please log in again.");
-        clearSessionAndPromptLogin();
-      });
+      if (streamRecoveryInFlightRef.current) return;
+      streamRecoveryInFlightRef.current = true;
+      void renewAccessToken()
+        .catch(() => {
+          setError("Your session expired. Please log in again.");
+          clearSessionAndPromptLogin();
+        })
+        .finally(() => {
+          streamRecoveryInFlightRef.current = false;
+        });
     };
 
     return () => {

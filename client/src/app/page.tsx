@@ -852,7 +852,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!token) return;
-    streamFailureCountRef.current = 0;
 
     const source = openMessageStream(
       token,
@@ -887,6 +886,11 @@ export default function Home() {
 
     return () => source.close();
   }, [token, selectedMatchId, streamRetryTick]);
+
+  useEffect(() => {
+    if (!token) return;
+    streamFailureCountRef.current = 0;
+  }, [token]);
 
   useEffect(() => {
     if (!token || !selectedMatchId || selectedChatLockReason) return;
