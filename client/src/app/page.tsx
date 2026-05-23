@@ -484,7 +484,9 @@ export default function Home() {
     options: { silent?: boolean; recycle?: boolean; allowRecycle?: boolean } = {},
   ) => {
     try {
-      const nextCards = await getDiscoverCards(authToken, getDiscoverQuery({ recycle: options.recycle }));
+      const nextCards = await withSessionRecovery((sessionToken) =>
+        getDiscoverCards(sessionToken || authToken, getDiscoverQuery({ recycle: options.recycle })),
+      );
       if (nextCards.length === 0 && options.allowRecycle && !options.recycle) {
         setStatus("You have exhausted people in your area. Refreshing with new picks...");
         await loadDiscoverDeck(authToken, {
@@ -519,10 +521,10 @@ export default function Home() {
   const bootstrapData = async (authToken: string) => {
     try {
       const [nextCards, nextMatches, me, nextLikes] = await Promise.all([
-        getDiscoverCards(authToken, getDiscoverQuery()),
-        getMatches(authToken),
-        getMyProfile(authToken),
-        getIncomingLikes(authToken),
+        withSessionRecovery((sessionToken) => getDiscoverCards(sessionToken || authToken, getDiscoverQuery())),
+        withSessionRecovery((sessionToken) => getMatches(sessionToken || authToken)),
+        withSessionRecovery((sessionToken) => getMyProfile(sessionToken || authToken)),
+        withSessionRecovery((sessionToken) => getIncomingLikes(sessionToken || authToken)),
       ]);
 
       setCards(nextCards);
@@ -535,17 +537,17 @@ export default function Home() {
       setLikesUnlocked(nextLikes.canViewLikes);
       setVerificationStatus(me.verificationStatus ?? "none");
 
-      const verify = await getMyVerificationStatus(authToken);
+      const verify = await withSessionRecovery((sessionToken) => getMyVerificationStatus(sessionToken || authToken));
       setVerificationStatus(verify.verificationStatus);
 
       if (nextMatches.length > 0) {
         const firstMatchId = nextMatches[0].id;
         setSelectedMatchId(firstMatchId);
         try {
-          const initialMessages = await getMessages(authToken, firstMatchId);
+          const initialMessages = await withSessionRecovery((sessionToken) => getMessages(sessionToken || authToken, firstMatchId));
           clearMatchChatLock(firstMatchId);
           setMessages(initialMessages);
-          await markMessagesRead(authToken, firstMatchId);
+          await withSessionRecovery((sessionToken) => markMessagesRead(sessionToken || authToken, firstMatchId));
         } catch (messageError) {
           const message = messageError instanceof Error ? messageError.message : "Failed to fetch messages";
           if (isChatMembershipLockMessage(message)) {
