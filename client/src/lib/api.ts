@@ -335,9 +335,13 @@ export const openMessageStream = (
   token: string,
   onMessage: (payload: { matchId: string; message: MessageItem; from: string }) => void,
   onTyping?: (payload: TypingEventPayload) => void,
+  onReady?: () => void,
   onError?: () => void,
 ) => {
   const source = new EventSource(`${API_BASE}/messages/stream?token=${encodeURIComponent(token)}`);
+  source.addEventListener("ready", () => {
+    if (onReady) onReady();
+  });
   source.addEventListener("message", (event) => {
     const parsed = JSON.parse(event.data) as { matchId: string; message: MessageItem; from: string };
     onMessage(parsed);

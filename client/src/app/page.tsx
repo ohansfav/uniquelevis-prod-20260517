@@ -287,6 +287,7 @@ export default function Home() {
   const [humanChallengeId, setHumanChallengeId] = useState("");
   const [humanAnswer, setHumanAnswer] = useState("");
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
+  const streamFailureCountRef = useRef(0);
   const [streamRetryTick, setStreamRetryTick] = useState(0);
 
   useEffect(() => {
@@ -387,6 +388,33 @@ export default function Home() {
     localStorage.removeItem("ul_access_token");
     localStorage.removeItem("ul_refresh_token");
     setShowAuthForm(true);
+  };
+
+  const handleStreamFailure = () => {
+    streamFailureCountRef.current += 1;
+
+    if (streamFailureCountRef.current < 3) {
+      window.setTimeout(() => {
+        setStreamRetryTick((value) => value + 1);
+      }, 1200);
+      return;
+    }
+
+    if (!refreshToken) {
+      setError("Your session expired. Please log in again.");
+      clearSessionAndPromptLogin();
+      return;
+    }
+
+    void renewAccessToken()
+      .then(() => {
+        streamFailureCountRef.current = 0;
+        setStreamRetryTick((value) => value + 1);
+      })
+      .catch(() => {
+        setError("Your session expired. Please log in again.");
+        clearSessionAndPromptLogin();
+      });
   };
 
   const renewAccessToken = async () => {
@@ -819,6 +847,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!token) return;
+    streamFailureCountRef.current = 0;
 
     const source = openMessageStream(
       token,
@@ -840,9 +869,10 @@ export default function Home() {
         }));
       },
       () => {
-        window.setTimeout(() => {
-          setStreamRetryTick((value) => value + 1);
-        }, 1200);
+        streamFailureCountRef.current = 0;
+      },
+      () => {
+        handleStreamFailure();
       },
     );
 
