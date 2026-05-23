@@ -18,6 +18,7 @@ import { applyThemeMode, getStoredThemeMode, saveThemeMode, type ThemeMode } fro
 import {
   createUpgradeCheckout,
   getDiscoverCards,
+  getBillingConfig,
   getHumanCheckChallenge,
   getIncomingLikes,
   getMatches,
@@ -697,6 +698,8 @@ export default function Home() {
 
     const params = new URLSearchParams(window.location.search);
     const reference = params.get("reference") ?? params.get("trxref");
+    const providerFromQuery = params.get("provider");
+    const provider = providerFromQuery === "opay" ? "opay" : providerFromQuery === "paystack" ? "paystack" : undefined;
     const upgradeStatus = params.get("upgrade");
 
     if (!reference) {
@@ -709,13 +712,13 @@ export default function Home() {
     }
 
     let cancelled = false;
-    void withSessionRecovery((authToken) => verifyUpgradeCheckout(authToken, reference))
+    void withSessionRecovery((authToken) => verifyUpgradeCheckout(authToken, reference, provider))
       .then(async (result) => {
         if (cancelled) return;
         const me = await withSessionRecovery((authToken) => getMyProfile(authToken));
         setProfile(me);
         setCurrentUser(me);
-        setStatus(`Payment verified. ${result.tier.toUpperCase()} activated.`);
+        setStatus(`Payment verified via ${result.provider.toUpperCase()}. ${result.tier.toUpperCase()} activated.`);
       })
       .catch((verificationError) => {
         if (cancelled) return;
@@ -1006,7 +1009,15 @@ export default function Home() {
     if (!token) return;
 
     try {
-      const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan));
+      let provider: "paystack" | "opay" | undefined;
+      try {
+        const config = await getBillingConfig();
+        provider = config.provider;
+      } catch {
+        provider = undefined;
+      }
+
+      const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan, provider));
       if (checkout.checkoutUrl) {
         window.location.href = checkout.checkoutUrl;
         return;

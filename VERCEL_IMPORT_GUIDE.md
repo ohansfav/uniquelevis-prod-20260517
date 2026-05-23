@@ -47,6 +47,14 @@ Optional billing vars:
 - `PAYSTACK_AMOUNT_SILVER` (kobo, e.g. `100000` for ₦1,000)
 - `PAYSTACK_AMOUNT_GOLD` (kobo, e.g. `300000` for ₦3,000)
 - `PAYSTACK_AMOUNT_DIAMOND` (kobo, e.g. `500000` for ₦5,000)
+- `OPAY_PUBLIC_KEY`
+- `OPAY_PRIVATE_KEY`
+- `OPAY_MERCHANT_ID`
+- `OPAY_WEBHOOK_SECRET`
+- `OPAY_COUNTRY` (default `NG`)
+- `OPAY_API_BASE` (prod: `https://liveapi.opaycheckout.com`, test: `https://testapi.opaycheckout.com`)
+- `OPAY_PAY_METHOD` (optional)
+- `BILLING_DEFAULT_PROVIDER` (`paystack` or `opay`)
 - `BILLING_PROVIDER_TOKEN`
 
 Current membership mapping:
@@ -96,6 +104,21 @@ To automatically upgrade membership after successful payment:
 2. Copy the webhook signing secret into backend env as:
    - `PAYSTACK_WEBHOOK_SECRET=<your_paystack_secret_key>`
 3. Redeploy backend.
+
+## OPay Webhook Wiring
+
+To automatically upgrade membership after successful OPay checkout:
+
+1. In OPay dashboard, set callback/webhook endpoint:
+   - URL: `https://<backend-domain>/api/billing/webhook/opay`
+2. Set backend vars:
+   - `OPAY_PUBLIC_KEY`
+   - `OPAY_PRIVATE_KEY`
+   - `OPAY_MERCHANT_ID`
+   - `OPAY_WEBHOOK_SECRET` (if provided by OPay)
+3. Optional provider switch:
+   - `BILLING_DEFAULT_PROVIDER=opay`
+4. Redeploy backend.
 
 ---
 

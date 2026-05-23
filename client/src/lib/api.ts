@@ -14,6 +14,8 @@ import type {
   VerificationStatus,
 } from "./types";
 
+export type BillingProvider = "paystack" | "opay";
+
 // ALWAYS use the backend URL - no conditionals that might fail
 // In production (deployed), all requests go to the backend
 // In development (localhost), keep using /api for local testing
@@ -360,6 +362,7 @@ export const openMessageStream = (
 export const createUpgradeCheckout = async (
   token: string,
   plan: PaidMembershipTier,
+  provider?: BillingProvider,
 ) => {
   const res = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
@@ -369,6 +372,7 @@ export const createUpgradeCheckout = async (
     },
     body: JSON.stringify({
       plan,
+      provider,
       successPath: "/?upgrade=success",
       cancelPath: "/?upgrade=cancelled",
     }),
@@ -376,12 +380,13 @@ export const createUpgradeCheckout = async (
   if (!res.ok) {
     throw new Error(await readErrorMessage(res, "Unable to start checkout"));
   }
-  return (await res.json()) as { ok: boolean; checkoutUrl: string | null; sessionId: string };
+  return (await res.json()) as { ok: boolean; provider: BillingProvider; checkoutUrl: string | null; sessionId: string; reference?: string };
 };
 
 export const verifyUpgradeCheckout = async (
   token: string,
   reference: string,
+  provider?: BillingProvider,
 ) => {
   const res = await fetch(`${API_BASE}/billing/verify-checkout`, {
     method: "POST",
@@ -389,14 +394,14 @@ export const verifyUpgradeCheckout = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ reference }),
+    body: JSON.stringify({ reference, provider }),
   });
 
   if (!res.ok) {
     throw new Error(await readErrorMessage(res, "Unable to verify payment"));
   }
 
-  return (await res.json()) as { ok: boolean; tier: PaidMembershipTier; reference: string };
+  return (await res.json()) as { ok: boolean; provider: BillingProvider; tier: PaidMembershipTier; reference: string };
 };
 
 export const getBillingConfig = async () => {
@@ -409,11 +414,15 @@ export const getBillingConfig = async () => {
   }
 
   return (await res.json()) as {
-    provider: "paystack";
+    provider: BillingProvider;
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
     planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
+    providers?: {
+      paystack: { checkoutConfigured: boolean; missing: string[] };
+      opay: { checkoutConfigured: boolean; missing: string[] };
+    };
     missing: string[];
     checkoutMissing: string[];
     optionalMissing: string[];

@@ -25,11 +25,15 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pending, setPending] = useState<VerificationRequest[]>([]);
   const [billingConfig, setBillingConfig] = useState<{
-    provider: "paystack";
+    provider: "paystack" | "opay";
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
     planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
+    providers?: {
+      paystack: { checkoutConfigured: boolean; missing: string[] };
+      opay: { checkoutConfigured: boolean; missing: string[] };
+    };
     missing: string[];
   } | null>(null);
   const [billingTestUserId, setBillingTestUserId] = useState("");
@@ -104,7 +108,7 @@ export default function AdminPage() {
     if (!token || !billingTestUserId) return;
     await runAdminBillingTestUpgrade(token, billingTestUserId, billingTestTier);
     await loadAdminData(token);
-    setMessage(`Paystack webhook simulation applied: ${billingTestTier.toUpperCase()} for selected user.`);
+    setMessage(`Billing simulation applied: ${billingTestTier.toUpperCase()} for selected user.`);
   };
 
   if (!token) {
@@ -163,8 +167,8 @@ export default function AdminPage() {
         </section>
 
         <section className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
-          <h2 className="text-lg font-semibold text-[var(--color-primary)]">Billing Health (Paystack)</h2>
-          <p className="mt-1 text-xs text-[var(--color-text-muted)]">Live readiness check plus simulated upgrade trigger.</p>
+          <h2 className="text-lg font-semibold text-[var(--color-primary)]">Billing Health</h2>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">Live readiness check plus simulated upgrade trigger. Active provider: {billingConfig?.provider?.toUpperCase() ?? "UNKNOWN"}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
             <span className={`rounded-full px-3 py-1 font-semibold ${billingConfig?.checkoutConfigured ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
