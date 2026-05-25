@@ -496,6 +496,8 @@ const writeSnapshot = () => {
   }
 };
 
+export const canEnforceRefreshSessions = () => persistenceEnabled;
+
 export const initStore = async () => {
   if (hasKvPersistence) {
     try {

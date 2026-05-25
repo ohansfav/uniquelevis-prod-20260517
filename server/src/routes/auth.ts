@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { UserRecord } from "../types/models.js";
 import {
   addRefreshSession,
+  canEnforceRefreshSessions,
   createUser,
   ensureSessionUser,
   findUserByEmail,
@@ -273,7 +274,8 @@ authRouter.post("/auth/refresh", (req, res) => {
   try {
     const payload = verifyRefreshToken(parsed.data.refreshToken);
     const userId = payload.sub;
-    if (!userId || !hasRefreshSession(userId, parsed.data.refreshToken)) {
+    const shouldRequireTrackedRefreshSession = canEnforceRefreshSessions();
+    if (!userId || (shouldRequireTrackedRefreshSession && !hasRefreshSession(userId, parsed.data.refreshToken))) {
       res.status(401).json({ message: "Refresh token is invalid" });
       return;
     }

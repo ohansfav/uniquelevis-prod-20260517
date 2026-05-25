@@ -64,7 +64,9 @@ Optional billing vars:
 Persistence note for launch:
 
 - On Vercel/serverless, local filesystem state is not durable across cold starts.
+- Refresh now falls back to signed token validation when durable refresh-session storage is unavailable, which prevents active users from being logged out after a cold start.
 - Configure Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) so accounts, profiles, matches, and refresh sessions persist.
+- KV is still recommended so logout/revocation and all other state changes remain durable across instances.
 
 Current membership mapping:
 
