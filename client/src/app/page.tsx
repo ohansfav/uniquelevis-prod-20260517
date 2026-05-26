@@ -444,6 +444,7 @@ export default function Home() {
       .then((refreshed) => {
         setToken(refreshed.accessToken);
         setCurrentUser(refreshed.user);
+        localStorage.setItem("ul_access_token", refreshed.accessToken);
         return refreshed.accessToken;
       })
       .finally(() => {
@@ -823,6 +824,8 @@ export default function Home() {
       setToken(auth.accessToken);
       setRefreshToken(auth.refreshToken);
       setCurrentUser(auth.user);
+      localStorage.setItem("ul_access_token", auth.accessToken);
+      localStorage.setItem("ul_refresh_token", auth.refreshToken);
       setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
       if (authMode === "signup") {
         // Open onboarding immediately after signup; defer full bootstrap until after profile completion.

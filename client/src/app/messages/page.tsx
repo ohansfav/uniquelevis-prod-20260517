@@ -259,7 +259,8 @@ export default function MessagesPage() {
     if (!token || !selectedMatchId) return;
     try {
       setError(null);
-      await withSessionRecovery((authToken) => sendMessage(authToken, selectedMatchId, text));
+      const sent = await withSessionRecovery((authToken) => sendMessage(authToken, selectedMatchId, text));
+      setMessages((prev) => (prev.some((item) => item.id === sent.id) ? prev : [...prev, sent]));
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : "Failed to send message";
       if (isUnauthorizedMessage(message)) {
@@ -270,6 +271,26 @@ export default function MessagesPage() {
       setError(message);
     }
   };
+
+  useEffect(() => {
+    if (!token || !selectedMatchId) return;
+
+    const poller = window.setInterval(() => {
+      void withSessionRecovery((authToken) => getMessages(authToken, selectedMatchId))
+        .then((nextMessages) => {
+          setMessages(nextMessages);
+        })
+        .catch((pollError) => {
+          const message = pollError instanceof Error ? pollError.message : "Failed to refresh messages";
+          if (isUnauthorizedMessage(message)) {
+            setError("Your session expired. Please log in again.");
+            clearSessionAndPromptLogin();
+          }
+        });
+    }, 6000);
+
+    return () => window.clearInterval(poller);
+  }, [token, selectedMatchId]);
 
   const handleTypingChange = async (isTyping: boolean) => {
     if (!token || !selectedMatchId) return;

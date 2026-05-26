@@ -17,7 +17,10 @@ import type { SessionProfileClaim } from "../utils/jwt.js";
 const seedPassword = bcrypt.hashSync("Password123!", 10);
 const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
 
-const STORE_FILE = join(process.cwd(), "data", "store.json");
+const isVercelRuntime = process.env.VERCEL === "1";
+const STORE_FILE = isVercelRuntime
+  ? join("/tmp", "unique-levis", "store.json")
+  : join(process.cwd(), "data", "store.json");
 let persistenceEnabled = true;
 let kvFlushInFlight = false;
 let pendingKvSnapshot: string | null = null;
@@ -512,12 +515,6 @@ export const initStore = async () => {
       disablePersistence(message);
       return;
     }
-  }
-
-  // Vercel functions are immutable between deployments; only keep state in memory unless KV is configured.
-  if (process.env.VERCEL === "1") {
-    disablePersistence("VERCEL runtime detected without KV persistence");
-    return;
   }
 
   if (!existsSync(STORE_FILE)) {

@@ -27,12 +27,8 @@ export const canViewProfile = (viewerTier?: MembershipTier, targetTier?: Members
 };
 
 export const getMessageAccessError = (viewerTier?: MembershipTier, targetTier?: MembershipTier) => {
-  if (!canViewProfile(viewerTier, targetTier)) {
-    const target = resolveMembershipTier(targetTier);
-    return target === "diamond"
-      ? "This member only accepts chats from Gold and Diamond accounts."
-      : "This member only accepts chats from Silver, Gold, and Diamond accounts.";
-  }
-
+  // Messaging is allowed once a match exists; do not lock active conversations by tier.
+  void viewerTier;
+  void targetTier;
   return null;
 };
