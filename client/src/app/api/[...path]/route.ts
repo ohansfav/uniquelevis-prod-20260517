@@ -4,8 +4,6 @@ const BACKEND_BASE = process.env.API_PROXY_TARGET
   ? `${process.env.API_PROXY_TARGET.replace(/\/$/, "")}/api`
   : "https://uniquelevis-api.vercel.app/api";
 
-const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] as const;
-
 const HOP_BY_HOP_RESPONSE_HEADERS = [
   "connection",
   "keep-alive",
@@ -49,9 +47,10 @@ const proxy = async (request: NextRequest, path: string[]) => {
   };
 
   if (method !== "GET" && method !== "HEAD") {
-    init.body = request.body;
-    // Required when streaming request body through fetch in Node runtime.
-    (init as RequestInit & { duplex: "half" }).duplex = "half";
+    const rawBody = await request.arrayBuffer();
+    if (rawBody.byteLength > 0) {
+      init.body = rawBody;
+    }
   }
 
   const upstream = await fetch(targetUrl, init);
