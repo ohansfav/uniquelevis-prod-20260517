@@ -247,6 +247,18 @@ const landingCopy: Record<
 export default function Home() {
   type BillingConfigState = Awaited<ReturnType<typeof getBillingConfig>>;
 
+  const getOnboardingStorageKey = (userId: string) => `ul_onboarding_complete_${userId}`;
+
+  const hasCompletedOnboardingLocally = (userId: string) => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(getOnboardingStorageKey(userId)) === "1";
+  };
+
+  const markOnboardingCompletedLocally = (userId: string) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(getOnboardingStorageKey(userId), "1");
+  };
+
   const [authReady, setAuthReady] = useState(false);
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -532,7 +544,12 @@ export default function Home() {
       setMatches(nextMatches);
       setProfile(me);
       setCurrentUser(me);
-      setNeedsOnboarding((me.photos?.length ?? 0) === 0);
+      const hasProfilePhoto = (me.photos?.length ?? 0) > 0;
+      if (hasProfilePhoto) {
+        markOnboardingCompletedLocally(me.id);
+      }
+      const completedLocally = hasCompletedOnboardingLocally(me.id);
+      setNeedsOnboarding(!hasProfilePhoto && !completedLocally);
       setIncomingLikes(nextLikes.likes);
       setLikesCount(nextLikes.count);
       setLikesUnlocked(nextLikes.canViewLikes);
@@ -1709,6 +1726,7 @@ export default function Home() {
                 token={token}
                 profile={profile}
                 onComplete={(updated) => {
+                  markOnboardingCompletedLocally(updated.id);
                   setProfile(updated);
                   setCurrentUser(updated);
                   setNeedsOnboarding(false);
