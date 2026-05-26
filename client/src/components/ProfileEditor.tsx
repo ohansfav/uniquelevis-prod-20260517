@@ -5,6 +5,7 @@ import { getProfileImage } from "@/lib/image";
 
 type Props = {
   profile: PublicUser | null;
+  isLoadingProfile?: boolean;
   onSave: (input: Partial<PublicUser>) => Promise<void>;
   verificationStatus?: "none" | "pending" | "approved" | "rejected";
   onRequestVerification?: (photoUrl: string) => Promise<void>;
@@ -12,6 +13,7 @@ type Props = {
 
 export default function ProfileEditor({
   profile,
+  isLoadingProfile = false,
   onSave,
   verificationStatus = "none",
   onRequestVerification,
@@ -64,7 +66,9 @@ export default function ProfileEditor({
   if (!profile) {
     return (
       <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[0_20px_30px_rgba(0,0,0,0.06)]">
-        <p className="text-sm text-[var(--color-text-muted)]">Login to edit your profile.</p>
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {isLoadingProfile ? "Loading your profile..." : "Login to edit your profile."}
+        </p>
       </section>
     );
   }

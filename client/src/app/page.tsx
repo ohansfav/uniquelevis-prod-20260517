@@ -1770,6 +1770,7 @@ export default function Home() {
             <ProfileInsights profile={profile} />
             <ProfileEditor
               profile={profile}
+              isLoadingProfile={Boolean(token) && !profile && !hasBootstrapped}
               onSave={handleSaveProfile}
               verificationStatus={verificationStatus}
               onRequestVerification={handleRequestVerification}
@@ -1934,6 +1935,7 @@ export default function Home() {
               <ProfileInsights profile={profile} />
               <ProfileEditor
                 profile={profile}
+                isLoadingProfile={Boolean(token) && !profile && !hasBootstrapped}
                 onSave={handleSaveProfile}
                 verificationStatus={verificationStatus}
                 onRequestVerification={handleRequestVerification}
