@@ -24,6 +24,7 @@ const STORE_FILE = isVercelRuntime
 let persistenceEnabled = true;
 let kvFlushInFlight = false;
 let pendingKvSnapshot: string | null = null;
+let kvFlushPromise: Promise<void> | null = null;
 
 const disablePersistence = (reason: string) => {
   if (!persistenceEnabled) {
@@ -93,24 +94,36 @@ const readSnapshotFromKv = async (): Promise<Partial<StoreSnapshot> | null> => {
   return JSON.parse(result) as Partial<StoreSnapshot>;
 };
 
-const flushKvSnapshot = async () => {
-  if (kvFlushInFlight || !pendingKvSnapshot || !persistenceEnabled) {
+const flushKvSnapshot = async (): Promise<void> => {
+  if (kvFlushPromise) {
+    return kvFlushPromise;
+  }
+
+  if (!pendingKvSnapshot || !persistenceEnabled) {
     return;
   }
 
-  kvFlushInFlight = true;
-  try {
-    while (pendingKvSnapshot && persistenceEnabled) {
-      const serialized = pendingKvSnapshot;
-      pendingKvSnapshot = null;
-      await runKvCommand(["SET", env.STORE_KV_KEY, serialized]);
+  kvFlushPromise = (async () => {
+    kvFlushInFlight = true;
+    try {
+      while (pendingKvSnapshot && persistenceEnabled) {
+        const serialized = pendingKvSnapshot;
+        pendingKvSnapshot = null;
+        await runKvCommand(["SET", env.STORE_KV_KEY, serialized]);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown KV persistence error";
+      disablePersistence(message);
+    } finally {
+      kvFlushInFlight = false;
+      kvFlushPromise = null;
+      if (pendingKvSnapshot && persistenceEnabled) {
+        void flushKvSnapshot();
+      }
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown KV persistence error";
-    disablePersistence(message);
-  } finally {
-    kvFlushInFlight = false;
-  }
+  })();
+
+  return kvFlushPromise;
 };
 
 const inferDatingIntent = (userId: string): UserRecord["datingIntent"] => {
@@ -500,6 +513,14 @@ const writeSnapshot = () => {
 };
 
 export const canEnforceRefreshSessions = () => persistenceEnabled;
+
+export const flushStorePersistence = async () => {
+  if (!hasKvPersistence || !persistenceEnabled) {
+    return;
+  }
+
+  await flushKvSnapshot();
+};
 
 export const initStore = async () => {
   if (hasKvPersistence) {

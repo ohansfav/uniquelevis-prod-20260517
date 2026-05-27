@@ -10,6 +10,7 @@ import {
   ensureSessionUser,
   findUserByEmail,
   findUserById,
+  flushStorePersistence,
   hasRefreshSession,
   publicUser,
   revokeRefreshSession,
@@ -156,6 +157,7 @@ authRouter.post("/auth/signup", async (req, res) => {
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
+  await flushStorePersistence();
 
   res.status(201).json({
     user: publicUser(user),
@@ -222,6 +224,7 @@ authRouter.post("/auth/login", async (req, res) => {
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
+  await flushStorePersistence();
 
   res.json({
     user: publicUser(user),
@@ -252,6 +255,7 @@ authRouter.post("/auth/admin/login", async (req, res) => {
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
+  await flushStorePersistence();
 
   res.json({
     user: publicUser(user),
@@ -293,10 +297,11 @@ authRouter.post("/auth/refresh", (req, res) => {
   }
 });
 
-authRouter.post("/auth/logout", requireAuth, (req, res) => {
+authRouter.post("/auth/logout", requireAuth, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (parsed.success) {
     revokeRefreshSession(parsed.data.refreshToken);
+    await flushStorePersistence();
   }
 
   res.json({ ok: true });
