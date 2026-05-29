@@ -8,6 +8,16 @@ const clientOrigins = clientOriginRaw
   .map((value) => value.trim())
   .filter(Boolean);
 
+const kvRestUrl =
+  process.env.KV_REST_API_URL
+  ?? process.env.UPSTASH_REDIS_REST_URL
+  ?? "";
+
+const kvRestToken =
+  process.env.KV_REST_API_TOKEN
+  ?? process.env.UPSTASH_REDIS_REST_TOKEN
+  ?? "";
+
 const env = {
   PORT: Number(process.env.PORT ?? 5000),
   NODE_ENV,
@@ -40,8 +50,8 @@ const env = {
     .map((value) => value.trim())
     .filter(Boolean),
   STORE_BACKEND: process.env.STORE_BACKEND ?? "auto",
-  KV_REST_API_URL: process.env.KV_REST_API_URL ?? "",
-  KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN ?? "",
+  KV_REST_API_URL: kvRestUrl,
+  KV_REST_API_TOKEN: kvRestToken,
   STORE_KV_KEY: process.env.STORE_KV_KEY ?? "unique-levis:store-snapshot:v1",
 };
 

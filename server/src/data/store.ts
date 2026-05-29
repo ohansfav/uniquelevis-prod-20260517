@@ -514,6 +514,13 @@ const writeSnapshot = () => {
 
 export const canEnforceRefreshSessions = () => persistenceEnabled;
 
+export const getStoreDiagnostics = () => ({
+  backend: hasKvPersistence ? "kv" : isVercelRuntime ? "tmp-file" : "file",
+  persistenceEnabled,
+  kvConfigured: Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN),
+  kvFlushInFlight,
+});
+
 export const flushStorePersistence = async () => {
   if (!hasKvPersistence || !persistenceEnabled) {
     return;
