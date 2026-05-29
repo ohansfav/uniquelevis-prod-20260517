@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   createMessage,
   findUserById,
+  flushStorePersistence,
   getMessagesByMatch,
   isUserInMatch,
   markMessagesRead,
@@ -89,7 +90,7 @@ messagesRouter.get("/messages/:matchId", requireAuth, (req, res) => {
   res.json({ messages: getMessagesByMatch(matchId) });
 });
 
-messagesRouter.post("/messages/:matchId/read", requireAuth, (req, res) => {
+messagesRouter.post("/messages/:matchId/read", requireAuth, async (req, res) => {
   const userId = req.authUserId!;
   const { matchId } = req.params;
 
@@ -105,6 +106,7 @@ messagesRouter.post("/messages/:matchId/read", requireAuth, (req, res) => {
   }
 
   markMessagesRead(matchId, userId);
+  await flushStorePersistence();
   res.json({ ok: true });
 });
 
@@ -112,7 +114,7 @@ const sendMessageSchema = z.object({
   text: z.string().min(1).max(1000),
 });
 
-messagesRouter.post("/messages/:matchId", requireAuth, (req: Request, res: Response) => {
+messagesRouter.post("/messages/:matchId", requireAuth, async (req: Request, res: Response) => {
   const userId = req.authUserId!;
   const { matchId } = req.params;
 
@@ -150,6 +152,7 @@ messagesRouter.post("/messages/:matchId", requireAuth, (req: Request, res: Respo
     from: userA?.id === userId ? userA?.firstName : userB?.firstName,
   });
 
+  await flushStorePersistence();
   res.status(201).json({ message });
 });
 

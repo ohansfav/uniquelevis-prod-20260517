@@ -957,7 +957,16 @@ export default function Home() {
   }, [token]);
 
   useEffect(() => {
+    if (!selectedMatchId) return;
+    const exists = matches.some((match) => match.id === selectedMatchId);
+    if (exists) return;
+    setSelectedMatchId(matches[0]?.id ?? null);
+    setMessages([]);
+  }, [matches, selectedMatchId]);
+
+  useEffect(() => {
     if (!token || !selectedMatchId || selectedChatLockReason) return;
+    if (!matches.some((match) => match.id === selectedMatchId)) return;
 
     const poller = window.setInterval(() => {
       void withSessionRecovery((authToken) => getMessages(authToken, selectedMatchId))

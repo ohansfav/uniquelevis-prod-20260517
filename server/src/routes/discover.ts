@@ -5,6 +5,7 @@ import {
   createMatchIfNeeded,
   findUserById,
   findMutualLike,
+  flushStorePersistence,
   likes,
   matches,
   publicUser,
@@ -499,7 +500,7 @@ const swipeSchema = z.object({
   type: z.enum(["like", "skip", "super_like"]),
 });
 
-discoverRouter.post("/interactions/swipe", requireAuth, (req, res) => {
+discoverRouter.post("/interactions/swipe", requireAuth, async (req, res) => {
   const parsed = swipeSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
@@ -543,5 +544,6 @@ discoverRouter.post("/interactions/swipe", requireAuth, (req, res) => {
     }
   }
 
+  await flushStorePersistence();
   res.json({ ok: true, match });
 });
