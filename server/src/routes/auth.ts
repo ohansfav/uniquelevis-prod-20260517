@@ -13,6 +13,7 @@ import {
   flushStorePersistence,
   hasRefreshSession,
   publicUser,
+  reloadStorePersistence,
   revokeRefreshSession,
 } from "../data/store.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
@@ -153,6 +154,7 @@ authRouter.post("/auth/signup", async (req, res) => {
     return;
   }
 
+  await reloadStorePersistence();
   const user = await createUser(parsed.data);
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
@@ -221,6 +223,7 @@ authRouter.post("/auth/login", async (req, res) => {
 
   clearFailedAttempts(attemptKey);
 
+  await reloadStorePersistence();
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
@@ -252,6 +255,7 @@ authRouter.post("/auth/admin/login", async (req, res) => {
     return;
   }
 
+  await reloadStorePersistence();
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
@@ -300,6 +304,7 @@ authRouter.post("/auth/refresh", (req, res) => {
 authRouter.post("/auth/logout", requireAuth, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (parsed.success) {
+    await reloadStorePersistence();
     revokeRefreshSession(parsed.data.refreshToken);
     await flushStorePersistence();
   }

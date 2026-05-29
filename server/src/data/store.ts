@@ -529,6 +529,22 @@ export const flushStorePersistence = async () => {
   await flushKvSnapshot();
 };
 
+export const reloadStorePersistence = async () => {
+  if (!hasKvPersistence || !persistenceEnabled) {
+    return;
+  }
+
+  try {
+    const parsed = await readSnapshotFromKv();
+    if (parsed) {
+      applySnapshot(parsed);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to reload KV snapshot";
+    disablePersistence(message);
+  }
+};
+
 export const initStore = async () => {
   if (hasKvPersistence) {
     try {

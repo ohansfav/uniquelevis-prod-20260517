@@ -8,6 +8,7 @@ import {
   getMessagesByMatch,
   isUserInMatch,
   markMessagesRead,
+  reloadStorePersistence,
   matches,
 } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -105,6 +106,7 @@ messagesRouter.post("/messages/:matchId/read", requireAuth, async (req, res) => 
     return;
   }
 
+  await reloadStorePersistence();
   markMessagesRead(matchId, userId);
   await flushStorePersistence();
   res.json({ ok: true });
@@ -135,6 +137,7 @@ messagesRouter.post("/messages/:matchId", requireAuth, async (req: Request, res:
     return;
   }
 
+  await reloadStorePersistence();
   const message = createMessage(matchId, userId, parsed.data.text.trim());
 
   const match = matches.find((m) => m.id === matchId)!;

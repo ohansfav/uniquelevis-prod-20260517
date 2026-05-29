@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { findUserById, publicUser, submitVerification, updateUserProfile } from "../data/store.js";
+import { findUserById, publicUser, reloadStorePersistence, submitVerification, updateUserProfile } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
 import { canViewProfile } from "../utils/membership.js";
 
@@ -48,13 +48,14 @@ const updateProfileSchema = z.object({
   datingIntent: z.enum(["short-term", "serious", "long-term"]).optional(),
 });
 
-profilesRouter.put("/profiles/me", requireAuth, (req, res) => {
+profilesRouter.put("/profiles/me", requireAuth, async (req, res) => {
   const parsed = updateProfileSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
     return;
   }
 
+  await reloadStorePersistence();
   const user = updateUserProfile(req.authUserId!, parsed.data);
   if (!user) {
     res.status(404).json({ message: "User not found" });
@@ -74,7 +75,7 @@ const verifySchema = z.object({
     ),
 });
 
-profilesRouter.post("/profiles/me/verify", requireAuth, (req, res) => {
+profilesRouter.post("/profiles/me/verify", requireAuth, async (req, res) => {
   const parsed = verifySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Provide a valid photoUrl" });
@@ -93,6 +94,7 @@ profilesRouter.post("/profiles/me/verify", requireAuth, (req, res) => {
     res.json({ ok: true, status: "pending", message: "Verification already pending review" });
     return;
   }
+  await reloadStorePersistence();
   submitVerification(req.authUserId!, parsed.data.photoUrl);
   res.json({ ok: true, status: "pending", message: "Submitted for admin review" });
 });

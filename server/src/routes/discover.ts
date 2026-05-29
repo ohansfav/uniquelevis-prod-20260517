@@ -7,6 +7,7 @@ import {
   findMutualLike,
   flushStorePersistence,
   likes,
+  reloadStorePersistence,
   matches,
   publicUser,
   refreshSessions,
@@ -507,6 +508,7 @@ discoverRouter.post("/interactions/swipe", requireAuth, async (req, res) => {
     return;
   }
 
+  await reloadStorePersistence();
   const me = findUserById(req.authUserId!);
   if (!me) {
     res.status(404).json({ message: "Authenticated user not found" });
