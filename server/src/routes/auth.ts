@@ -148,14 +148,20 @@ authRouter.post("/auth/signup", async (req, res) => {
     return;
   }
 
-  const existing = findUserByEmail(parsed.data.email);
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+
+  await reloadStorePersistence();
+
+  const existing = findUserByEmail(normalizedEmail);
   if (existing) {
     res.status(409).json({ message: "Email already in use" });
     return;
   }
 
-  await reloadStorePersistence();
-  const user = await createUser(parsed.data);
+  const user = await createUser({
+    ...parsed.data,
+    email: normalizedEmail,
+  });
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
@@ -182,10 +188,14 @@ authRouter.post("/auth/login", async (req, res) => {
     return;
   }
 
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+
+  await reloadStorePersistence();
+
   const ip = req.ip ?? "unknown";
   const now = Date.now();
   cleanupLoginAttempts(now);
-  const attemptKey = buildLoginAttemptKey(ip, parsed.data.email);
+  const attemptKey = buildLoginAttemptKey(ip, normalizedEmail);
   const lockState = loginAttempts.get(attemptKey);
   if (lockState?.lockedUntil && lockState.lockedUntil > now) {
     const retryAfterSeconds = Math.ceil((lockState.lockedUntil - now) / 1000);
@@ -207,7 +217,7 @@ authRouter.post("/auth/login", async (req, res) => {
   }
   humanChallenges.delete(parsed.data.challengeId);
 
-  const user = findUserByEmail(parsed.data.email);
+  const user = findUserByEmail(normalizedEmail);
   if (!user) {
     registerFailedAttempt(attemptKey, now);
     res.status(401).json({ message: "Invalid credentials" });
@@ -223,7 +233,6 @@ authRouter.post("/auth/login", async (req, res) => {
 
   clearFailedAttempts(attemptKey);
 
-  await reloadStorePersistence();
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
@@ -243,7 +252,11 @@ authRouter.post("/auth/admin/login", async (req, res) => {
     return;
   }
 
-  const user = findUserByEmail(parsed.data.email);
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+
+  await reloadStorePersistence();
+
+  const user = findUserByEmail(normalizedEmail);
   if (!user || !user.isAdmin) {
     res.status(401).json({ message: "Invalid admin credentials" });
     return;
@@ -255,7 +268,6 @@ authRouter.post("/auth/admin/login", async (req, res) => {
     return;
   }
 
-  await reloadStorePersistence();
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
   addRefreshSession(user.id, refreshToken);
