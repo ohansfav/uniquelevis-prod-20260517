@@ -392,7 +392,6 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
       (u) =>
         u.id !== authUserId
         && !excluded.has(u.id)
-        && u.photos.length > 0
         && canViewProfile(me.membershipTier, u.membershipTier)
         && isDiscoverCompatible(me, u),
     )
