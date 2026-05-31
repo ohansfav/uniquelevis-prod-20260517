@@ -534,31 +534,47 @@ export default function Home() {
 
   const bootstrapData = async (authToken: string) => {
     try {
-      const [nextCards, nextMatches, me, nextLikes] = await Promise.all([
-        withSessionRecovery((sessionToken) => getDiscoverCards(sessionToken || authToken, getDiscoverQuery())),
+      const nextCards = await withSessionRecovery((sessionToken) =>
+        getDiscoverCards(sessionToken || authToken, getDiscoverQuery()),
+      );
+
+      setCards(nextCards);
+
+      const [matchesResult, profileResult, likesResult, verificationResult] = await Promise.allSettled([
         withSessionRecovery((sessionToken) => getMatches(sessionToken || authToken)),
         withSessionRecovery((sessionToken) => getMyProfile(sessionToken || authToken)),
         withSessionRecovery((sessionToken) => getIncomingLikes(sessionToken || authToken)),
+        withSessionRecovery((sessionToken) => getMyVerificationStatus(sessionToken || authToken)),
       ]);
 
-      setCards(nextCards);
-      setMatches(nextMatches);
-      setProfile(me);
-      setCurrentUser(me);
-      const hasProfilePhoto = (me.photos?.length ?? 0) > 0;
-      if (hasProfilePhoto) {
-        markOnboardingCompletedLocally(me.id);
+      if (matchesResult.status === "fulfilled") {
+        setMatches(matchesResult.value);
       }
-      const completedLocally = hasCompletedOnboardingLocally(me.id);
-      setNeedsOnboarding(!hasProfilePhoto && !completedLocally);
-      setIncomingLikes(nextLikes.likes);
-      setLikesCount(nextLikes.count);
-      setLikesUnlocked(nextLikes.canViewLikes);
-      setVerificationStatus(me.verificationStatus ?? "none");
 
-      const verify = await withSessionRecovery((sessionToken) => getMyVerificationStatus(sessionToken || authToken));
-      setVerificationStatus(verify.verificationStatus);
+      if (profileResult.status === "fulfilled") {
+        const me = profileResult.value;
+        setProfile(me);
+        setCurrentUser(me);
+        const hasProfilePhoto = (me.photos?.length ?? 0) > 0;
+        if (hasProfilePhoto) {
+          markOnboardingCompletedLocally(me.id);
+        }
+        const completedLocally = hasCompletedOnboardingLocally(me.id);
+        setNeedsOnboarding(!hasProfilePhoto && !completedLocally);
+        setVerificationStatus(me.verificationStatus ?? "none");
+      }
 
+      if (likesResult.status === "fulfilled") {
+        setIncomingLikes(likesResult.value.likes);
+        setLikesCount(likesResult.value.count);
+        setLikesUnlocked(likesResult.value.canViewLikes);
+      }
+
+      if (verificationResult.status === "fulfilled") {
+        setVerificationStatus(verificationResult.value.verificationStatus);
+      }
+
+      const nextMatches = matchesResult.status === "fulfilled" ? matchesResult.value : [];
       if (nextMatches.length > 0) {
         const firstMatchId = nextMatches[0].id;
         setSelectedMatchId(firstMatchId);
