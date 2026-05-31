@@ -545,6 +545,19 @@ export const reloadStorePersistence = async () => {
   }
 };
 
+// Ensures the KV store is loaded at most once per serverless cold-start.
+// Subsequent calls on the same warm instance are no-ops (fast).
+// If the load fails the promise is cleared so the next request retries.
+let _coldStartLoadPromise: Promise<void> | null = null;
+export const ensureStoreLoadedOnce = (): Promise<void> => {
+  if (!_coldStartLoadPromise) {
+    _coldStartLoadPromise = reloadStorePersistence().catch(() => {
+      _coldStartLoadPromise = null;
+    });
+  }
+  return _coldStartLoadPromise;
+};
+
 export const initStore = async () => {
   if (hasKvPersistence) {
     try {

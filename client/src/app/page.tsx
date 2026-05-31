@@ -534,17 +534,18 @@ export default function Home() {
 
   const bootstrapData = async (authToken: string) => {
     try {
-      const nextCards = await withSessionRecovery((sessionToken) =>
-        getDiscoverCards(sessionToken || authToken, getDiscoverQuery()),
-      );
+      // Use authToken directly here — bootstrapData is called right after login where
+      // the React state for token/refreshToken may still be stale (""). Using the
+      // stale state inside withSessionRecovery would trigger premature logouts.
+      const nextCards = await getDiscoverCards(authToken, getDiscoverQuery());
 
       setCards(nextCards);
 
       const [matchesResult, profileResult, likesResult, verificationResult] = await Promise.allSettled([
-        withSessionRecovery((sessionToken) => getMatches(sessionToken || authToken)),
-        withSessionRecovery((sessionToken) => getMyProfile(sessionToken || authToken)),
-        withSessionRecovery((sessionToken) => getIncomingLikes(sessionToken || authToken)),
-        withSessionRecovery((sessionToken) => getMyVerificationStatus(sessionToken || authToken)),
+        getMatches(authToken),
+        getMyProfile(authToken),
+        getIncomingLikes(authToken),
+        getMyVerificationStatus(authToken),
       ]);
 
       if (matchesResult.status === "fulfilled") {
@@ -579,10 +580,10 @@ export default function Home() {
         const firstMatchId = nextMatches[0].id;
         setSelectedMatchId(firstMatchId);
         try {
-          const initialMessages = await withSessionRecovery((sessionToken) => getMessages(sessionToken || authToken, firstMatchId));
+          const initialMessages = await getMessages(authToken, firstMatchId);
           clearMatchChatLock(firstMatchId);
           setMessages(initialMessages);
-          await withSessionRecovery((sessionToken) => markMessagesRead(sessionToken || authToken, firstMatchId));
+          await markMessagesRead(authToken, firstMatchId);
         } catch (messageError) {
           const message = messageError instanceof Error ? messageError.message : "Failed to fetch messages";
           if (isChatMembershipLockMessage(message)) {
@@ -611,13 +612,9 @@ export default function Home() {
       setVerificationStatus("none");
 
       const message = loadError instanceof Error ? loadError.message : "Failed to load your feed.";
-      setError(isUnauthorizedMessage(message)
-        ? "Your session expired. Please log in again."
-        : "We could not load profiles right now. Please refresh or try again shortly.");
-
-      if (isUnauthorizedMessage(message)) {
-        clearSessionAndPromptLogin();
-      }
+      // Do NOT clear the session during bootstrap — a transient server error should not
+      // force the user to log in again immediately after they just logged in.
+      setError("We could not load your feed right now. Please refresh or try again shortly.");
     } finally {
       setHasBootstrapped(true);
     }

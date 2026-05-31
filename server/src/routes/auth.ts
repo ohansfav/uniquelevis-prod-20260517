@@ -299,7 +299,7 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
-authRouter.post("/auth/refresh", (req, res) => {
+authRouter.post("/auth/refresh", async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
@@ -309,6 +309,12 @@ authRouter.post("/auth/refresh", (req, res) => {
   try {
     const payload = verifyRefreshToken(parsed.data.refreshToken);
     const userId = payload.sub;
+
+    // Always reload from KV before checking sessions/users.
+    // Vercel may route this request to a cold-start instance whose in-memory
+    // store is stale (e.g. different from the instance that handled login).
+    await reloadStorePersistence();
+
     const shouldRequireTrackedRefreshSession = canEnforceRefreshSessions();
     if (!userId || (shouldRequireTrackedRefreshSession && !hasRefreshSession(userId, parsed.data.refreshToken))) {
       res.status(401).json({ message: "Refresh token is invalid" });

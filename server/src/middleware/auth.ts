@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { ensureSessionUser } from "../data/store.js";
+import { ensureSessionUser, ensureStoreLoadedOnce } from "../data/store.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 
 declare global {
@@ -10,7 +10,11 @@ declare global {
   }
 }
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  // On a Vercel cold start the in-memory store may only have seed users.
+  // Load the full KV snapshot once so every authenticated route sees real accounts.
+  await ensureStoreLoadedOnce();
+
   const header = req.headers.authorization;
   const queryToken = typeof req.query.token === "string" ? req.query.token : undefined;
 

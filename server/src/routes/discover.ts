@@ -374,7 +374,9 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
   const me = findUserById(authUserId);
 
   if (!me) {
-    res.status(404).json({ message: "Authenticated user not found" });
+    // The user passed JWT auth but their record isn't in this instance's store.
+    // Return a safe empty deck rather than a hard 404 that would force logout.
+    res.json([]);
     return;
   }
 
