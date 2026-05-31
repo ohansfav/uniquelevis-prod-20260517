@@ -137,11 +137,20 @@ export const signup = async (payload: {
   return (await res.json()) as AuthResponse;
 };
 
-export const adminLogin = async (email: string, password: string) => {
+export const adminLogin = async (
+  email: string,
+  password: string,
+  verification?: { challengeId: string; challengeAnswer: string },
+) => {
   const res = await fetch(`${API_BASE}/auth/admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({
+      email,
+      password,
+      challengeId: verification?.challengeId,
+      challengeAnswer: verification?.challengeAnswer,
+    }),
   });
   if (!res.ok) {
     throw new Error("Admin login failed");

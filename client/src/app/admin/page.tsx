@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   adminLogin,
   approveVerificationByAdmin,
+  getHumanCheckChallenge,
   getBillingConfig,
   getAdminStats,
   getAdminUsers,
@@ -41,6 +42,31 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("God Eyes online. Track users, tiers, and verification decisions.");
+  const [humanPrompt, setHumanPrompt] = useState("");
+  const [humanChallengeId, setHumanChallengeId] = useState("");
+  const [humanAnswer, setHumanAnswer] = useState("");
+
+  useEffect(() => {
+    if (token) return;
+
+    let mounted = true;
+    void getHumanCheckChallenge()
+      .then((challenge) => {
+        if (!mounted) return;
+        setHumanPrompt(challenge.prompt);
+        setHumanChallengeId(challenge.challengeId);
+        setHumanAnswer("");
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setHumanPrompt("5 + 3 = ?");
+        setHumanChallengeId("");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
 
   const loadAdminData = async (accessToken: string) => {
     const [nextStats, nextUsers, nextPending, nextBillingConfig] = await Promise.all([
@@ -72,12 +98,38 @@ export default function AdminPage() {
   const handleAdminLogin = async () => {
     setLoading(true);
     setError(null);
+
+    if (!humanChallengeId) {
+      setError("Human verification is still loading. Please wait and try again.");
+      setLoading(false);
+      return;
+    }
+
+    if (!humanAnswer.trim()) {
+      setError("Please solve the human verification challenge.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const auth = await adminLogin(email, password);
+      const auth = await adminLogin(email, password, {
+        challengeId: humanChallengeId,
+        challengeAnswer: humanAnswer.trim(),
+      });
       setToken(auth.accessToken);
       setMessage("Admin authenticated. Full system view unlocked.");
     } catch {
       setError("Admin login failed.");
+      void getHumanCheckChallenge()
+        .then((challenge) => {
+          setHumanPrompt(challenge.prompt);
+          setHumanChallengeId(challenge.challengeId);
+          setHumanAnswer("");
+        })
+        .catch(() => {
+          setHumanPrompt("5 + 3 = ?");
+          setHumanChallengeId("");
+        });
     } finally {
       setLoading(false);
     }
@@ -134,6 +186,19 @@ export default function AdminPage() {
               type="password"
               placeholder="Admin password"
             />
+            <label className="space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-white/85">Human Verification</span>
+              <div className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm font-semibold text-white">
+                Solve: {humanPrompt || "Loading challenge..."}
+              </div>
+              <input
+                className="input"
+                value={humanAnswer}
+                onChange={(e) => setHumanAnswer(e.target.value)}
+                placeholder="Type the answer"
+                inputMode="numeric"
+              />
+            </label>
             <button
               onClick={handleAdminLogin}
               disabled={loading}
