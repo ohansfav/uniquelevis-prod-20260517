@@ -817,13 +817,29 @@ export default function Home() {
     setLoading(true);
     setError(null);
 
+    const normalizedEmail = email.normalize("NFKC").trim().toLowerCase();
+    const normalizedPassword = password.normalize("NFKC");
+    const normalizedHumanAnswer = humanAnswer.normalize("NFKC").trim();
+
+    if (!normalizedEmail) {
+      setError("Please enter your email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (!normalizedPassword.trim()) {
+      setError("Please enter your password.");
+      setLoading(false);
+      return;
+    }
+
     if (authMode === "login") {
       if (!humanChallengeId) {
         setError("Human verification is still loading. Please wait a moment and try again.");
         setLoading(false);
         return;
       }
-      if (!humanAnswer.trim()) {
+      if (!normalizedHumanAnswer) {
         setError("Please solve the human verification challenge before logging in.");
         setLoading(false);
         return;
@@ -833,11 +849,17 @@ export default function Home() {
     try {
       const auth =
         authMode === "login"
-          ? await login(email, password, {
+          ? await login(normalizedEmail, normalizedPassword, {
               challengeId: humanChallengeId,
-              challengeAnswer: humanAnswer,
+              challengeAnswer: normalizedHumanAnswer,
             })
-          : await signup({ email, password, firstName, age: Number(ageInput) || 18, city });
+          : await signup({
+              email: normalizedEmail,
+              password: normalizedPassword,
+              firstName,
+              age: Number(ageInput) || 18,
+              city,
+            });
 
       setToken(auth.accessToken);
       setRefreshToken(auth.refreshToken);
@@ -1633,6 +1655,10 @@ export default function Home() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                   autoComplete="email"
                   placeholder="name@example.com"
                 />
@@ -1645,6 +1671,9 @@ export default function Home() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     type={showPassword ? "text" : "password"}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     autoComplete={authMode === "login" ? "current-password" : "new-password"}
                     placeholder={authMode === "login" ? "Enter your password" : "Any password you choose"}
                   />
