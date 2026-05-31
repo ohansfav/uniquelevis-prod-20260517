@@ -53,19 +53,39 @@ export default function MessagesPage() {
     window.location.href = "/?auth=login";
   };
 
+  const resolveRefreshToken = () => {
+    if (refreshToken) {
+      return refreshToken;
+    }
+
+    const savedRefresh = localStorage.getItem("ul_refresh_token");
+    if (savedRefresh) {
+      setRefreshToken(savedRefresh);
+      return savedRefresh;
+    }
+
+    return "";
+  };
+
   const renewAccessToken = async () => {
-    if (!refreshToken) {
+    const activeRefreshToken = resolveRefreshToken();
+    if (!activeRefreshToken) {
       throw new Error("Your session expired. Please log in again.");
     }
+
     if (!refreshInFlightRef.current) {
-      refreshInFlightRef.current = refreshAccessToken(refreshToken)
+      refreshInFlightRef.current = refreshAccessToken(activeRefreshToken)
         .then((refreshed) => {
           setToken(refreshed.accessToken);
           localStorage.setItem("ul_access_token", refreshed.accessToken);
           return refreshed.accessToken;
         })
-        .catch(() => {
-          throw new Error("Your session expired. Please log in again.");
+        .catch((refreshError) => {
+          const message = refreshError instanceof Error ? refreshError.message : "Refresh failed";
+          if (isUnauthorizedMessage(message) || /refresh token/i.test(message.toLowerCase())) {
+            throw new Error("Your session expired. Please log in again.");
+          }
+          throw new Error("Connection issue while renewing your session. Please try again.");
         })
         .finally(() => {
           refreshInFlightRef.current = null;
@@ -173,10 +193,18 @@ export default function MessagesPage() {
           streamRecoveryInFlightRef.current = false;
           setStreamRetryTick((value) => value + 1);
         })
-        .catch(() => {
+        .catch((streamRecoveryError) => {
           streamRecoveryInFlightRef.current = false;
-          setError("Your session expired. Please log in again.");
-          clearSessionAndPromptLogin();
+          const message = streamRecoveryError instanceof Error ? streamRecoveryError.message : "Stream recovery failed";
+          if (isUnauthorizedMessage(message)) {
+            setError("Your session expired. Please log in again.");
+            clearSessionAndPromptLogin();
+            return;
+          }
+          setError("Realtime connection dropped. Reconnecting...");
+          window.setTimeout(() => {
+            setStreamRetryTick((value) => value + 1);
+          }, 1800);
         });
     };
 

@@ -210,7 +210,7 @@ export const refreshAccessToken = async (refreshToken: string) => {
     body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) {
-    throw new Error("Refresh failed");
+    throw new Error(await readErrorMessage(res, "Refresh failed"));
   }
   return (await res.json()) as { accessToken: string; user: PublicUser };
 };

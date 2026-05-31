@@ -58,6 +58,8 @@ const humanChallenges = new Map<string, HumanChallengeState>();
 
 const buildLoginAttemptKey = (ip: string, email: string) => `${ip}|${email.trim().toLowerCase()}`;
 
+const normalizePasswordInput = (password: string) => password.normalize("NFKC").trim();
+
 const cleanupLoginAttempts = (now: number) => {
   for (const [key, state] of loginAttempts.entries()) {
     if (state.lockedUntil > 0 && state.lockedUntil <= now) {
@@ -149,6 +151,12 @@ authRouter.post("/auth/signup", async (req, res) => {
   }
 
   const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  const normalizedPassword = normalizePasswordInput(parsed.data.password);
+
+  if (!normalizedPassword) {
+    res.status(400).json({ message: "Password cannot be empty" });
+    return;
+  }
 
   await reloadStorePersistence();
 
@@ -161,6 +169,7 @@ authRouter.post("/auth/signup", async (req, res) => {
   const user = await createUser({
     ...parsed.data,
     email: normalizedEmail,
+    password: normalizedPassword,
   });
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
@@ -189,6 +198,7 @@ authRouter.post("/auth/login", async (req, res) => {
   }
 
   const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  const normalizedPassword = normalizePasswordInput(parsed.data.password);
 
   await reloadStorePersistence();
 
@@ -224,7 +234,12 @@ authRouter.post("/auth/login", async (req, res) => {
     return;
   }
 
-  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+  const validRaw = await bcrypt.compare(parsed.data.password, user.passwordHash);
+  const shouldTryNormalized = normalizedPassword.length > 0 && normalizedPassword !== parsed.data.password;
+  const validNormalized = shouldTryNormalized
+    ? await bcrypt.compare(normalizedPassword, user.passwordHash)
+    : false;
+  const valid = validRaw || validNormalized;
   if (!valid) {
     registerFailedAttempt(attemptKey, now);
     res.status(401).json({ message: "Invalid credentials" });

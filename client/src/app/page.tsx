@@ -277,6 +277,7 @@ export default function Home() {
   const [profile, setProfile] = useState<PublicUser | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [ageInput, setAgeInput] = useState("");
   const [city, setCity] = useState("");
@@ -1632,18 +1633,29 @@ export default function Home() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
+                  autoComplete="email"
                   placeholder="name@example.com"
                 />
               </label>
               <label className="space-y-1 md:col-span-1">
                 <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">Password</span>
-                <input
-                  className="input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                  placeholder={authMode === "login" ? "Enter your password" : "Any password you choose"}
-                />
+                <div className="relative">
+                  <input
+                    className="input pr-16"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type={showPassword ? "text" : "password"}
+                    autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                    placeholder={authMode === "login" ? "Enter your password" : "Any password you choose"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-primary)] hover:bg-[var(--color-surface-elevated)]"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
               </label>
               {authMode === "login" && (
                 <label className="space-y-1 md:col-span-2">
