@@ -165,11 +165,11 @@ export default function AdminPage() {
 
   if (!token) {
     return (
-      <main className="min-h-screen bg-[var(--color-primary)] px-4 py-8 text-white">
-        <section className="mx-auto w-full max-w-md rounded-3xl border border-white/25 bg-white/10 p-6 backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/85">Unique Levi's Admin</p>
-          <h1 className="mt-2 text-3xl">God Eyes Dashboard</h1>
-          <p className="mt-2 text-sm text-white/80">Approve profile photos, grant verified checkmarks, and control membership tiers.</p>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,#182c4f_0%,#0a1628_55%,#050c17_100%)] px-4 py-8 text-slate-100">
+        <section className="mx-auto w-full max-w-md rounded-3xl border border-slate-500/35 bg-[#0f1c31]/88 p-6 shadow-[0_26px_44px_rgba(0,0,0,0.45)] backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">Unique Levi's Admin</p>
+          <h1 className="mt-2 text-3xl text-slate-100">God Eyes Dashboard</h1>
+          <p className="mt-2 text-sm text-slate-300">Approve profile photos, grant verified checkmarks, and control membership tiers.</p>
 
           <div className="mt-5 space-y-3">
             <input
@@ -208,19 +208,19 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {error && <p className="mt-3 text-sm text-rose-200">{error}</p>}
+          {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
         </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)] px-4 py-6 md:px-6 md:py-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#152746_0%,#0a1628_45%,#050c17_100%)] px-4 py-6 text-slate-100 md:px-6 md:py-8">
       <section className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-3xl border border-white/45 bg-white p-5 shadow-[0_18px_28px_rgba(0,0,0,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">Admin Control</p>
-          <h1 className="mt-1 text-3xl text-[var(--color-primary)]">God Eyes Dashboard</h1>
-          <p className="mt-2 text-sm text-[var(--color-text-muted)]">{message}</p>
+        <header className="rounded-3xl border border-slate-500/30 bg-[#0f1c31]/88 p-5 shadow-[0_20px_34px_rgba(0,0,0,0.45)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">Admin Control</p>
+          <h1 className="mt-1 text-3xl text-slate-100">God Eyes Dashboard</h1>
+          <p className="mt-2 text-sm text-slate-300">{message}</p>
         </header>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -231,9 +231,9 @@ export default function AdminPage() {
           <StatCard label="Likes" value={stats?.totalLikes ?? 0} />
         </section>
 
-        <section className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
-          <h2 className="text-lg font-semibold text-[var(--color-primary)]">Billing Health</h2>
-          <p className="mt-1 text-xs text-[var(--color-text-muted)]">Live readiness check plus simulated upgrade trigger. Active provider: {billingConfig?.provider?.toUpperCase() ?? "UNKNOWN"}</p>
+        <section className="rounded-3xl border border-slate-500/30 bg-[#0f1c31]/88 p-5 shadow-[0_20px_34px_rgba(0,0,0,0.45)]">
+          <h2 className="text-lg font-semibold text-slate-100">Billing Health</h2>
+          <p className="mt-1 text-xs text-slate-300">Live readiness check plus simulated upgrade trigger. Active provider: {billingConfig?.provider?.toUpperCase() ?? "UNKNOWN"}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
             <span className={`rounded-full px-3 py-1 font-semibold ${billingConfig?.checkoutConfigured ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
@@ -283,25 +283,25 @@ export default function AdminPage() {
             >
               Run Test Upgrade
             </button>
-            <p className="text-[11px] text-[var(--color-text-muted)]">
+            <p className="text-[11px] text-slate-400">
               Amounts (kobo): P {billingConfig?.planAmounts.platinum ?? 0} / S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
             </p>
           </div>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_1.6fr]">
-          <article className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
-            <h2 className="text-lg font-semibold text-[var(--color-primary)]">Pending Verification Queue</h2>
+          <article className="rounded-3xl border border-slate-500/30 bg-[#0f1c31]/88 p-5 shadow-[0_20px_34px_rgba(0,0,0,0.45)]">
+            <h2 className="text-lg font-semibold text-slate-100">Pending Verification Queue</h2>
             <div className="mt-4 space-y-3">
               {pending.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-[var(--color-border)] p-3 text-sm text-[var(--color-text-muted)]">
+                <p className="rounded-2xl border border-dashed border-slate-500/40 bg-[#0b1629]/70 p-3 text-sm text-slate-300">
                   No pending verification requests.
                 </p>
               ) : (
                 pending.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-[var(--color-border)] p-3">
-                    <p className="font-semibold text-[var(--color-primary)]">{item.firstName}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">{item.email} • {item.city}</p>
+                  <div key={item.id} className="rounded-2xl border border-slate-500/35 bg-[#0b1629]/70 p-3">
+                    <p className="font-semibold text-slate-100">{item.firstName}</p>
+                    <p className="text-xs text-slate-300">{item.email} • {item.city}</p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <img
                         src={getProfileImage(item.pendingVerificationPhoto ?? item.currentPhotos[0], item.firstName)}
@@ -334,18 +334,18 @@ export default function AdminPage() {
             </div>
           </article>
 
-          <article className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
-            <h2 className="text-lg font-semibold text-[var(--color-primary)]">All Users</h2>
+          <article className="rounded-3xl border border-slate-500/30 bg-[#0f1c31]/88 p-5 shadow-[0_20px_34px_rgba(0,0,0,0.45)]">
+            <h2 className="text-lg font-semibold text-slate-100">All Users</h2>
             <div className="mt-4 space-y-3">
               {users.map((user) => (
-                <div key={user.id} className="rounded-2xl border border-[var(--color-border)] p-3">
+                <div key={user.id} className="rounded-2xl border border-slate-500/35 bg-[#0b1629]/70 p-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <img src={getProfileImage(user.photos[0], user.firstName, 96, 55)} alt={user.firstName} className="h-12 w-12 rounded-full object-cover" />
                     <div>
-                      <p className="font-semibold text-[var(--color-primary)]">{user.firstName}, {user.age}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{user.email} • {user.city}</p>
+                      <p className="font-semibold text-slate-100">{user.firstName}, {user.age}</p>
+                      <p className="text-xs text-slate-300">{user.email} • {user.city}</p>
                     </div>
-                    <span className="ml-auto rounded-full bg-[var(--color-surface)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">
+                    <span className="ml-auto rounded-full border border-slate-400/35 bg-[#13243d] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-200">
                       {user.membershipTier}
                     </span>
                     {user.verified && (
@@ -362,8 +362,8 @@ export default function AdminPage() {
                         onClick={() => void handleTierChange(user.id, tier)}
                         className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
                           user.membershipTier === tier
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                            : "border-[var(--color-border)] text-[var(--color-primary)]"
+                            ? "border-[#3f6cb8] bg-[#3f6cb8] text-white"
+                            : "border-slate-500/45 text-slate-200"
                         }`}
                       >
                         {tier}
@@ -382,9 +382,9 @@ export default function AdminPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_10px_18px_rgba(0,0,0,0.05)]">
-      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-[var(--color-primary)]">{value}</p>
+    <div className="rounded-2xl border border-slate-500/30 bg-[#0f1c31]/88 p-4 shadow-[0_18px_28px_rgba(0,0,0,0.45)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-300">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-100">{value}</p>
     </div>
   );
 }
