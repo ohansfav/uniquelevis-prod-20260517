@@ -54,10 +54,21 @@ const proxy = async (request: NextRequest, path: string[]) => {
   }
 
   const upstream = await fetch(targetUrl, init);
+  const upstreamContentType = upstream.headers.get("content-type") ?? "";
 
   const responseHeaders = new Headers(upstream.headers);
   HOP_BY_HOP_RESPONSE_HEADERS.forEach((header) => responseHeaders.delete(header));
   responseHeaders.set("cache-control", "no-store");
+
+  // Keep SSE responses streaming for chat events.
+  if (upstreamContentType.toLowerCase().includes("text/event-stream")) {
+    return new Response(upstream.body, {
+      status: upstream.status,
+      statusText: upstream.statusText,
+      headers: responseHeaders,
+    });
+  }
+
   const body = await upstream.arrayBuffer();
 
   return new Response(body, {

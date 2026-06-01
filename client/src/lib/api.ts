@@ -15,18 +15,9 @@ import type {
   VerificationStatus,
 } from "./types";
 
-// ALWAYS use the backend URL - no conditionals that might fail
-// In production (deployed), all requests go to the backend
-// In development (localhost), keep using /api for local testing
-const API_BASE = (typeof window !== "undefined" && 
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
-  ? "/api"  // Development only
-  : "https://uniquelevis-api.vercel.app/api";  // Production - ALWAYS use this on Vercel
-
-// Log API base for debugging
-if (typeof window !== "undefined") {
-  console.log(`[API] Hostname=${window.location.hostname}, API_BASE=${API_BASE}`);
-}
+// Always use the Next.js same-origin proxy so browser requests stay stable
+// across environments and do not depend on cross-origin CORS/runtime behavior.
+const API_BASE = "/api";
 
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";

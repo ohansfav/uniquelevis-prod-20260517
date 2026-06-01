@@ -376,7 +376,7 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
   if (!me) {
     // The user passed JWT auth but their record isn't in this instance's store.
     // Return a safe empty deck rather than a hard 404 that would force logout.
-    res.json([]);
+    res.json({ cards: [] });
     return;
   }
 
