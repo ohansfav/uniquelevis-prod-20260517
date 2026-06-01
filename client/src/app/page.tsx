@@ -612,8 +612,12 @@ export default function Home() {
       setVerificationStatus("none");
 
       const message = loadError instanceof Error ? loadError.message : "Failed to load your feed.";
-      // Do NOT clear the session during bootstrap — a transient server error should not
-      // force the user to log in again immediately after they just logged in.
+      if (isUnauthorizedMessage(message)) {
+        setError("Your session expired. Please log in again.");
+        clearSessionAndPromptLogin();
+        return;
+      }
+
       setError("We could not load your feed right now. Please refresh or try again shortly.");
     } finally {
       setHasBootstrapped(true);
