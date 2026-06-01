@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createLike, createMatchIfNeeded, findUserById, findMutualLike, likes, publicUser, users, } from "../data/store.js";
+import { createLike, createMatchIfNeeded, findUserById, findMutualLike, flushStorePersistence, likes, reloadStorePersistence, matches, publicUser, refreshSessions, users, } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
+import { canSeeIncomingLikes, canViewProfile } from "../utils/membership.js";
 export const discoverRouter = Router();
 const CITY_REGION_MAP = {
+    lagos: "west-africa",
     "lagos island": "west-africa",
     abuja: "west-africa",
     "port harcourt": "west-africa",
@@ -35,6 +37,33 @@ const DATE_IDEAS = [
     "Cooking challenge date",
 ];
 const normalize = (value) => value.trim().toLowerCase();
+const preferenceMatchesGender = (lookingFor, gender) => {
+    if (!lookingFor || lookingFor === "everyone") {
+        return true;
+    }
+    if (!gender) {
+        return true;
+    }
+    if (gender === "other") {
+        return false;
+    }
+    if (lookingFor === "men") {
+        return gender === "man";
+    }
+    if (lookingFor === "women") {
+        return gender === "woman";
+    }
+    return true;
+};
+const isDiscoverCompatible = (viewer, candidate) => {
+    if (!preferenceMatchesGender(viewer.lookingFor, candidate.gender)) {
+        return false;
+    }
+    if (!candidate.lookingFor || !viewer.gender) {
+        return true;
+    }
+    return preferenceMatchesGender(candidate.lookingFor, viewer.gender);
+};
 const shuffle = (items) => {
     const next = [...items];
     for (let i = next.length - 1; i > 0; i -= 1) {
@@ -170,13 +199,13 @@ const applyDiscoverFilters = (cards, query) => {
     if (typeof query.intent === "string") {
         const intent = query.intent.trim().toLowerCase();
         if (intent === "serious") {
-            next = next.filter((card) => card.matchScore >= 70);
+            next = next.filter((card) => card.datingIntent === "serious");
         }
         else if (intent === "casual") {
-            next = next.filter((card) => card.matchScore < 70);
+            next = next.filter((card) => card.datingIntent === "short-term");
         }
         else if (intent === "long-term") {
-            next = next.filter((card) => card.matchScore >= 80 || Boolean(card.verified));
+            next = next.filter((card) => card.datingIntent === "long-term");
         }
     }
     if (typeof query.mode === "string") {
@@ -256,7 +285,9 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
     const authUserId = req.authUserId;
     const me = findUserById(authUserId);
     if (!me) {
-        res.status(404).json({ message: "Authenticated user not found" });
+        // The user passed JWT auth but their record isn't in this instance's store.
+        // Return a safe empty deck rather than a hard 404 that would force logout.
+        res.json([]);
         return;
     }
     const recycleDeck = typeof req.query.recycle === "string" && req.query.recycle.trim().toLowerCase() === "true";
@@ -266,7 +297,10 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
             .filter((i) => i.byUserId === authUserId)
             .map((i) => i.targetUserId));
     const cards = users
-        .filter((u) => u.id !== authUserId && !excluded.has(u.id))
+        .filter((u) => u.id !== authUserId
+        && !excluded.has(u.id)
+        && canViewProfile(me.membershipTier, u.membershipTier)
+        && isDiscoverCompatible(me, u))
         .map((candidate) => {
         const scored = scoreCandidate(me, candidate);
         const base = publicUser(candidate);
@@ -278,6 +312,7 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
             aiReasons: scored.reasons,
             dateIdea: scored.dateIdea,
             distanceLabel: scored.distanceLabel,
+            datingIntent: candidate.datingIntent ?? "serious",
         };
     })
         .sort((a, b) => b.matchScore - a.matchScore);
@@ -294,7 +329,13 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
         mode: typeof req.query.mode === "string" ? req.query.mode : undefined,
         intent: typeof req.query.intent === "string" ? req.query.intent : undefined,
         verifiedOnly: typeof req.query.verifiedOnly === "string" ? req.query.verifiedOnly : undefined,
-    }).slice(0, 20);
+    })
+        .sort((a, b) => {
+        const aActive = refreshSessions.some((s) => s.userId === a.id) ? 1 : 0;
+        const bActive = refreshSessions.some((s) => s.userId === b.id) ? 1 : 0;
+        return bActive - aActive;
+    })
+        .slice(0, 20);
     const queryMode = typeof req.query.mode === "string" ? req.query.mode.trim().toLowerCase() : "for-you";
     const queryIntent = typeof req.query.intent === "string" ? req.query.intent.trim().toLowerCase() : "all";
     const queryVerifiedOnly = typeof req.query.verifiedOnly === "string" && req.query.verifiedOnly.trim().toLowerCase() === "true";
@@ -308,37 +349,83 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
     }));
     res.json({ cards: responseCards });
 });
+discoverRouter.get("/likes/incoming", requireAuth, (req, res) => {
+    const authUserId = req.authUserId;
+    const me = findUserById(authUserId);
+    if (!me) {
+        res.status(404).json({ message: "Authenticated user not found" });
+        return;
+    }
+    const matchedPairs = new Set(matches.map((match) => [match.userA, match.userB].sort().join("::")));
+    const incoming = likes
+        .filter((item) => item.targetUserId === authUserId && (item.type === "like" || item.type === "super_like"))
+        .filter((item) => !matchedPairs.has([item.byUserId, item.targetUserId].sort().join("::")))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const canViewLikes = canSeeIncomingLikes(me.membershipTier);
+    const visibleLikes = canViewLikes
+        ? incoming
+            .map((item) => {
+            const byUser = findUserById(item.byUserId);
+            if (!byUser || !canViewProfile(me.membershipTier, byUser.membershipTier)) {
+                return null;
+            }
+            return {
+                id: item.id,
+                createdAt: item.createdAt,
+                type: item.type,
+                byUser: publicUser(byUser),
+            };
+        })
+            .filter(Boolean)
+        : [];
+    res.json({
+        count: incoming.length,
+        canViewLikes,
+        likes: visibleLikes,
+    });
+});
 const swipeSchema = z.object({
     targetUserId: z.string().min(1),
     type: z.enum(["like", "skip", "super_like"]),
 });
-discoverRouter.post("/interactions/swipe", requireAuth, (req, res) => {
+discoverRouter.post("/interactions/swipe", requireAuth, async (req, res) => {
     const parsed = swipeSchema.safeParse(req.body);
     if (!parsed.success) {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
     }
-    const targetExists = users.some((u) => u.id === parsed.data.targetUserId);
-    if (!targetExists) {
+    await reloadStorePersistence();
+    const me = findUserById(req.authUserId);
+    if (!me) {
+        res.status(404).json({ message: "Authenticated user not found" });
+        return;
+    }
+    const targetUser = users.find((u) => u.id === parsed.data.targetUserId);
+    if (!targetUser) {
         res.status(404).json({ message: "Target user not found" });
         return;
     }
-    const me = req.authUserId;
-    createLike(me, parsed.data.targetUserId, parsed.data.type);
+    if (!canViewProfile(me.membershipTier, targetUser.membershipTier)) {
+        res.status(403).json({ message: "This profile is only visible to higher membership tiers." });
+        return;
+    }
+    const meId = req.authUserId;
+    createLike(meId, parsed.data.targetUserId, parsed.data.type);
     let match = null;
     if (parsed.data.type === "like" || parsed.data.type === "super_like") {
-        const existingMutual = findMutualLike(me, parsed.data.targetUserId);
+        const existingMutual = findMutualLike(meId, parsed.data.targetUserId);
         if (!existingMutual) {
             // Demo-friendly behavior: some profiles like back so users can experience matching/chat.
             const shouldLikeBack = parsed.data.type === "super_like" || Math.random() < 0.4;
             if (shouldLikeBack) {
-                createLike(parsed.data.targetUserId, me, "like");
+                createLike(parsed.data.targetUserId, meId, "like");
             }
         }
-        const mutual = findMutualLike(me, parsed.data.targetUserId);
+        const mutual = findMutualLike(meId, parsed.data.targetUserId);
         if (mutual) {
-            match = createMatchIfNeeded(me, parsed.data.targetUserId);
+            match = createMatchIfNeeded(meId, parsed.data.targetUserId);
         }
     }
+    await flushStorePersistence();
     res.json({ ok: true, match });
 });

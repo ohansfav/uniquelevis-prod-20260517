@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -78,21 +79,21 @@ export default function NavBar({ isAuthenticated, onLogout, onSearch }: Props) {
           )}
 
           {isAuthenticated && (
-            <a
+            <Link
               href="/messages"
               className="hidden rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-[var(--color-accent)] md:inline-flex"
             >
               Chats
-            </a>
+            </Link>
           )}
 
           {isAuthenticated && (
-            <a
+            <Link
               href="/"
               className="inline-flex rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-[var(--color-accent)] md:hidden"
             >
               Discover
-            </a>
+            </Link>
           )}
 
           {isAuthenticated && (

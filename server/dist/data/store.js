@@ -2,9 +2,111 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import bcrypt from "bcryptjs";
+import { env } from "../config/env.js";
 const seedPassword = bcrypt.hashSync("Password123!", 10);
 const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
-const STORE_FILE = join(process.cwd(), "data", "store.json");
+const isVercelRuntime = process.env.VERCEL === "1";
+const STORE_FILE = isVercelRuntime
+    ? join("/tmp", "unique-levis", "store.json")
+    : join(process.cwd(), "data", "store.json");
+let persistenceEnabled = true;
+let kvFlushInFlight = false;
+let pendingKvSnapshot = null;
+let kvFlushPromise = null;
+const disablePersistence = (reason) => {
+    if (!persistenceEnabled) {
+        return;
+    }
+    persistenceEnabled = false;
+    console.warn(`[store] Persistence disabled; running in-memory only. ${reason}`);
+};
+const shouldUseKvPersistence = () => {
+    if (env.STORE_BACKEND === "memory") {
+        return false;
+    }
+    if (env.STORE_BACKEND === "kv") {
+        return Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN);
+    }
+    if (env.STORE_BACKEND === "file") {
+        return false;
+    }
+    return Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN);
+};
+const hasKvPersistence = shouldUseKvPersistence();
+const runKvCommand = async (command) => {
+    if (!env.KV_REST_API_URL || !env.KV_REST_API_TOKEN) {
+        throw new Error("KV credentials are missing");
+    }
+    const res = await fetch(env.KV_REST_API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${env.KV_REST_API_TOKEN}`,
+        },
+        body: JSON.stringify(command),
+    });
+    if (!res.ok) {
+        throw new Error(`KV command failed with status ${res.status}`);
+    }
+    const payload = (await res.json().catch(() => null));
+    if (!payload) {
+        throw new Error("KV command returned invalid JSON");
+    }
+    if (typeof payload.error === "string" && payload.error.length > 0) {
+        throw new Error(payload.error);
+    }
+    return payload.result;
+};
+const readSnapshotFromKv = async () => {
+    const result = await runKvCommand(["GET", env.STORE_KV_KEY]);
+    if (typeof result !== "string" || result.trim().length === 0) {
+        return null;
+    }
+    return JSON.parse(result);
+};
+const flushKvSnapshot = async () => {
+    if (kvFlushPromise) {
+        return kvFlushPromise;
+    }
+    if (!pendingKvSnapshot || !persistenceEnabled) {
+        return;
+    }
+    kvFlushPromise = (async () => {
+        kvFlushInFlight = true;
+        try {
+            while (pendingKvSnapshot && persistenceEnabled) {
+                const serialized = pendingKvSnapshot;
+                pendingKvSnapshot = null;
+                await runKvCommand(["SET", env.STORE_KV_KEY, serialized]);
+            }
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Unknown KV persistence error";
+            disablePersistence(message);
+        }
+        finally {
+            kvFlushInFlight = false;
+            kvFlushPromise = null;
+            if (pendingKvSnapshot && persistenceEnabled) {
+                void flushKvSnapshot();
+            }
+        }
+    })();
+    return kvFlushPromise;
+};
+const inferDatingIntent = (userId) => {
+    if (userId === "u-admin")
+        return "serious";
+    const numericPart = Number((userId.match(/(\d+)$/)?.[1] ?? "0"));
+    if (!Number.isFinite(numericPart))
+        return "serious";
+    const mod = numericPart % 3;
+    if (mod === 0)
+        return "short-term";
+    if (mod === 1)
+        return "serious";
+    return "long-term";
+};
 const adminUser = {
     id: "u-admin",
     email: "admin@uniquelevis.com",
@@ -327,7 +429,28 @@ const ensureSeedUsers = () => {
         }
     }
 };
+const applySnapshot = (parsed) => {
+    const normalizedMessages = (parsed.messages ?? []).map((m) => ({
+        ...m,
+        seenBy: Array.isArray(m.seenBy) ? m.seenBy : [m.senderId],
+    }));
+    users.splice(0, users.length, ...(parsed.users ?? defaultSnapshot().users));
+    ensureSeedUsers();
+    users.forEach((user) => {
+        user.membershipTier = user.membershipTier ?? "free";
+        user.verified = user.verified ?? false;
+        user.verificationStatus = user.verificationStatus ?? "none";
+        user.datingIntent = user.datingIntent ?? inferDatingIntent(user.id);
+    });
+    likes.splice(0, likes.length, ...(parsed.likes ?? []));
+    matches.splice(0, matches.length, ...(parsed.matches ?? []));
+    messages.splice(0, messages.length, ...normalizedMessages);
+    refreshSessions.splice(0, refreshSessions.length, ...(parsed.refreshSessions ?? []));
+};
 const writeSnapshot = () => {
+    if (!persistenceEnabled) {
+        return;
+    }
     const snapshot = {
         users,
         likes,
@@ -335,10 +458,76 @@ const writeSnapshot = () => {
         messages,
         refreshSessions,
     };
-    mkdirSync(dirname(STORE_FILE), { recursive: true });
-    writeFileSync(STORE_FILE, JSON.stringify(snapshot, null, 2));
+    try {
+        if (hasKvPersistence) {
+            pendingKvSnapshot = JSON.stringify(snapshot);
+            void flushKvSnapshot();
+            return;
+        }
+        mkdirSync(dirname(STORE_FILE), { recursive: true });
+        writeFileSync(STORE_FILE, JSON.stringify(snapshot, null, 2));
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown persistence error";
+        disablePersistence(message);
+    }
 };
-export const initStore = () => {
+export const canEnforceRefreshSessions = () => persistenceEnabled;
+export const getStoreDiagnostics = () => ({
+    backend: hasKvPersistence ? "kv" : isVercelRuntime ? "tmp-file" : "file",
+    persistenceEnabled,
+    kvConfigured: Boolean(env.KV_REST_API_URL && env.KV_REST_API_TOKEN),
+    kvFlushInFlight,
+});
+export const flushStorePersistence = async () => {
+    if (!hasKvPersistence || !persistenceEnabled) {
+        return;
+    }
+    await flushKvSnapshot();
+};
+export const reloadStorePersistence = async () => {
+    if (!hasKvPersistence || !persistenceEnabled) {
+        return;
+    }
+    try {
+        const parsed = await readSnapshotFromKv();
+        if (parsed) {
+            applySnapshot(parsed);
+        }
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to reload KV snapshot";
+        disablePersistence(message);
+    }
+};
+// Ensures the KV store is loaded at most once per serverless cold-start.
+// Subsequent calls on the same warm instance are no-ops (fast).
+// If the load fails the promise is cleared so the next request retries.
+let _coldStartLoadPromise = null;
+export const ensureStoreLoadedOnce = () => {
+    if (!_coldStartLoadPromise) {
+        _coldStartLoadPromise = reloadStorePersistence().catch(() => {
+            _coldStartLoadPromise = null;
+        });
+    }
+    return _coldStartLoadPromise;
+};
+export const initStore = async () => {
+    if (hasKvPersistence) {
+        try {
+            const parsed = await readSnapshotFromKv();
+            if (parsed) {
+                applySnapshot(parsed);
+            }
+            writeSnapshot();
+            return;
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Unable to load KV snapshot";
+            disablePersistence(message);
+            return;
+        }
+    }
     if (!existsSync(STORE_FILE)) {
         writeSnapshot();
         return;
@@ -346,21 +535,7 @@ export const initStore = () => {
     try {
         const raw = readFileSync(STORE_FILE, "utf-8");
         const parsed = JSON.parse(raw);
-        const normalizedMessages = (parsed.messages ?? []).map((m) => ({
-            ...m,
-            seenBy: Array.isArray(m.seenBy) ? m.seenBy : [m.senderId],
-        }));
-        users.splice(0, users.length, ...(parsed.users ?? defaultSnapshot().users));
-        ensureSeedUsers();
-        users.forEach((user) => {
-            user.membershipTier = user.membershipTier ?? "free";
-            user.verified = user.verified ?? false;
-            user.verificationStatus = user.verificationStatus ?? "none";
-        });
-        likes.splice(0, likes.length, ...(parsed.likes ?? []));
-        matches.splice(0, matches.length, ...(parsed.matches ?? []));
-        messages.splice(0, messages.length, ...normalizedMessages);
-        refreshSessions.splice(0, refreshSessions.length, ...(parsed.refreshSessions ?? []));
+        applySnapshot(parsed);
         writeSnapshot();
     }
     catch {
@@ -375,6 +550,9 @@ export const publicUser = (user) => ({
     bio: user.bio,
     interests: user.interests,
     photos: user.photos,
+    gender: user.gender,
+    lookingFor: user.lookingFor,
+    datingIntent: user.datingIntent ?? "serious",
     membershipTier: user.membershipTier ?? "free",
     verified: user.verified ?? false,
     verificationStatus: user.verificationStatus ?? "none",
@@ -422,6 +600,33 @@ export const setMembershipTier = (userId, tier) => {
 };
 export const findUserByEmail = (email) => users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 export const findUserById = (id) => users.find((u) => u.id === id);
+export const ensureSessionUser = (userId, profile) => {
+    const existing = findUserById(userId);
+    if (existing) {
+        return existing;
+    }
+    if (!profile?.email || !profile.firstName || !Number.isFinite(profile.age) || !profile.city) {
+        return null;
+    }
+    const created = {
+        id: userId,
+        email: profile.email,
+        passwordHash: "session-only",
+        firstName: profile.firstName,
+        age: profile.age,
+        city: profile.city,
+        bio: profile.bio ?? "New here and open to meaningful connections.",
+        interests: profile.interests ?? ["Music", "Movies"],
+        photos: profile.photos ?? [],
+        datingIntent: profile.datingIntent ?? "serious",
+        membershipTier: profile.membershipTier ?? "free",
+        verified: profile.verified ?? false,
+        verificationStatus: profile.verificationStatus ?? "none",
+    };
+    users.push(created);
+    writeSnapshot();
+    return created;
+};
 export const updateUserProfile = (userId, input) => {
     const user = users.find((u) => u.id === userId);
     if (!user)
@@ -441,7 +646,8 @@ export const createUser = async (input) => {
         city: input.city,
         bio: input.bio ?? "New here and open to meaningful connections.",
         interests: ["Music", "Movies"],
-        photos: ["https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=900&q=80"],
+        photos: [],
+        datingIntent: "serious",
         membershipTier: "free",
         verified: false,
         verificationStatus: "none",

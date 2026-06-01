@@ -2,16 +2,34 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { addRefreshSession, createUser, findUserByEmail, findUserById, hasRefreshSession, publicUser, revokeRefreshSession, } from "../data/store.js";
+import { addRefreshSession, canEnforceRefreshSessions, createUser, ensureSessionUser, findUserByEmail, findUserById, flushStorePersistence, hasRefreshSession, publicUser, reloadStorePersistence, revokeRefreshSession, } from "../data/store.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { requireAuth } from "../middleware/auth.js";
 export const authRouter = Router();
+const toSessionProfile = (user) => {
+    if (!user)
+        return undefined;
+    return {
+        email: user.email,
+        firstName: user.firstName,
+        age: user.age,
+        city: user.city,
+        bio: user.bio,
+        interests: user.interests,
+        photos: user.photos,
+        datingIntent: user.datingIntent,
+        membershipTier: user.membershipTier,
+        verified: user.verified,
+        verificationStatus: user.verificationStatus,
+    };
+};
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_WINDOW_MS = 10 * 60 * 1000;
 const HUMAN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const loginAttempts = new Map();
 const humanChallenges = new Map();
 const buildLoginAttemptKey = (ip, email) => `${ip}|${email.trim().toLowerCase()}`;
+const normalizePasswordInput = (password) => password.normalize("NFKC").trim();
 const cleanupLoginAttempts = (now) => {
     for (const [key, state] of loginAttempts.entries()) {
         if (state.lockedUntil > 0 && state.lockedUntil <= now) {
@@ -91,15 +109,27 @@ authRouter.post("/auth/signup", async (req, res) => {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
     }
-    const existing = findUserByEmail(parsed.data.email);
+    const normalizedEmail = parsed.data.email.trim().toLowerCase();
+    const normalizedPassword = normalizePasswordInput(parsed.data.password);
+    if (!normalizedPassword) {
+        res.status(400).json({ message: "Password cannot be empty" });
+        return;
+    }
+    await reloadStorePersistence();
+    const existing = findUserByEmail(normalizedEmail);
     if (existing) {
         res.status(409).json({ message: "Email already in use" });
         return;
     }
-    const user = await createUser(parsed.data);
-    const accessToken = signAccessToken(user.id);
-    const refreshToken = signRefreshToken(user.id);
+    const user = await createUser({
+        ...parsed.data,
+        email: normalizedEmail,
+        password: normalizedPassword,
+    });
+    const accessToken = signAccessToken(user.id, toSessionProfile(user));
+    const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
     addRefreshSession(user.id, refreshToken);
+    await flushStorePersistence();
     res.status(201).json({
         user: publicUser(user),
         accessToken,
@@ -118,10 +148,13 @@ authRouter.post("/auth/login", async (req, res) => {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
     }
+    const normalizedEmail = parsed.data.email.trim().toLowerCase();
+    const normalizedPassword = normalizePasswordInput(parsed.data.password);
+    await reloadStorePersistence();
     const ip = req.ip ?? "unknown";
     const now = Date.now();
     cleanupLoginAttempts(now);
-    const attemptKey = buildLoginAttemptKey(ip, parsed.data.email);
+    const attemptKey = buildLoginAttemptKey(ip, normalizedEmail);
     const lockState = loginAttempts.get(attemptKey);
     if (lockState?.lockedUntil && lockState.lockedUntil > now) {
         const retryAfterSeconds = Math.ceil((lockState.lockedUntil - now) / 1000);
@@ -140,22 +173,28 @@ authRouter.post("/auth/login", async (req, res) => {
         return;
     }
     humanChallenges.delete(parsed.data.challengeId);
-    const user = findUserByEmail(parsed.data.email);
+    const user = findUserByEmail(normalizedEmail);
     if (!user) {
         registerFailedAttempt(attemptKey, now);
         res.status(401).json({ message: "Invalid credentials" });
         return;
     }
-    const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    const validRaw = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    const shouldTryNormalized = normalizedPassword.length > 0 && normalizedPassword !== parsed.data.password;
+    const validNormalized = shouldTryNormalized
+        ? await bcrypt.compare(normalizedPassword, user.passwordHash)
+        : false;
+    const valid = validRaw || validNormalized;
     if (!valid) {
         registerFailedAttempt(attemptKey, now);
         res.status(401).json({ message: "Invalid credentials" });
         return;
     }
     clearFailedAttempts(attemptKey);
-    const accessToken = signAccessToken(user.id);
-    const refreshToken = signRefreshToken(user.id);
+    const accessToken = signAccessToken(user.id, toSessionProfile(user));
+    const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
     addRefreshSession(user.id, refreshToken);
+    await flushStorePersistence();
     res.json({
         user: publicUser(user),
         accessToken,
@@ -168,7 +207,9 @@ authRouter.post("/auth/admin/login", async (req, res) => {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
     }
-    const user = findUserByEmail(parsed.data.email);
+    const normalizedEmail = parsed.data.email.trim().toLowerCase();
+    await reloadStorePersistence();
+    const user = findUserByEmail(normalizedEmail);
     if (!user || !user.isAdmin) {
         res.status(401).json({ message: "Invalid admin credentials" });
         return;
@@ -178,9 +219,10 @@ authRouter.post("/auth/admin/login", async (req, res) => {
         res.status(401).json({ message: "Invalid admin credentials" });
         return;
     }
-    const accessToken = signAccessToken(user.id);
-    const refreshToken = signRefreshToken(user.id);
+    const accessToken = signAccessToken(user.id, toSessionProfile(user));
+    const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
     addRefreshSession(user.id, refreshToken);
+    await flushStorePersistence();
     res.json({
         user: publicUser(user),
         accessToken,
@@ -190,7 +232,7 @@ authRouter.post("/auth/admin/login", async (req, res) => {
 const refreshSchema = z.object({
     refreshToken: z.string().min(1),
 });
-authRouter.post("/auth/refresh", (req, res) => {
+authRouter.post("/auth/refresh", async (req, res) => {
     const parsed = refreshSchema.safeParse(req.body);
     if (!parsed.success) {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
@@ -199,26 +241,33 @@ authRouter.post("/auth/refresh", (req, res) => {
     try {
         const payload = verifyRefreshToken(parsed.data.refreshToken);
         const userId = payload.sub;
-        if (!userId || !hasRefreshSession(userId, parsed.data.refreshToken)) {
+        // Always reload from KV before checking sessions/users.
+        // Vercel may route this request to a cold-start instance whose in-memory
+        // store is stale (e.g. different from the instance that handled login).
+        await reloadStorePersistence();
+        const shouldRequireTrackedRefreshSession = canEnforceRefreshSessions();
+        if (!userId || (shouldRequireTrackedRefreshSession && !hasRefreshSession(userId, parsed.data.refreshToken))) {
             res.status(401).json({ message: "Refresh token is invalid" });
             return;
         }
-        const user = findUserById(userId);
+        const user = findUserById(userId) ?? ensureSessionUser(userId, payload.profile);
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return;
         }
-        const accessToken = signAccessToken(user.id);
+        const accessToken = signAccessToken(user.id, toSessionProfile(user));
         res.json({ accessToken, user: publicUser(user) });
     }
     catch {
         res.status(401).json({ message: "Refresh token expired or invalid" });
     }
 });
-authRouter.post("/auth/logout", requireAuth, (req, res) => {
+authRouter.post("/auth/logout", requireAuth, async (req, res) => {
     const parsed = refreshSchema.safeParse(req.body);
     if (parsed.success) {
+        await reloadStorePersistence();
         revokeRefreshSession(parsed.data.refreshToken);
+        await flushStorePersistence();
     }
     res.json({ ok: true });
 });

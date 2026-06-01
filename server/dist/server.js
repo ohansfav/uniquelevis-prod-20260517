@@ -12,12 +12,32 @@ import { healthRouter } from "./routes/health.js";
 import { matchesRouter } from "./routes/matches.js";
 import { messagesRouter } from "./routes/messages.js";
 import { profilesRouter } from "./routes/profiles.js";
-import { billingRouter } from "./routes/billing.js";
+import { billingRouter, billingWebhookRouter } from "./routes/billing.js";
 const app = express();
-initStore();
+await initStore();
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_ORIGIN }));
-app.use(express.json({ limit: "1mb" }));
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        const allowed = env.CLIENT_ORIGINS.some((configuredOrigin) => {
+            if (configuredOrigin === origin) {
+                return true;
+            }
+            if (configuredOrigin.startsWith("*")) {
+                const suffix = configuredOrigin.slice(1);
+                return suffix.length > 0 && origin.endsWith(suffix);
+            }
+            return false;
+        });
+        callback(allowed ? null : new Error("Not allowed by CORS"), allowed);
+    },
+    credentials: true,
+}));
+app.use("/api", billingWebhookRouter);
+app.use(express.json({ limit: "4mb" }));
 app.use(morgan("dev"));
 app.get("/", (_req, res) => {
     res.json({
@@ -35,6 +55,9 @@ app.use("/api", messagesRouter);
 app.use("/api", billingRouter);
 app.use("/api", adminRouter);
 app.use(errorHandler);
-app.listen(env.PORT, () => {
-    console.log(`Unique Levi's API running on port ${env.PORT}`);
-});
+if (process.env.VERCEL !== "1") {
+    app.listen(env.PORT, () => {
+        console.log(`Unique Levi's API running on port ${env.PORT}`);
+    });
+}
+export default app;

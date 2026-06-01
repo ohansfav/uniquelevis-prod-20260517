@@ -167,7 +167,7 @@ export default function AdminPage() {
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,#182c4f_0%,#0a1628_55%,#050c17_100%)] px-4 py-8 text-slate-100">
         <section className="mx-auto w-full max-w-md rounded-3xl border border-slate-500/35 bg-[#0f1c31]/88 p-6 shadow-[0_26px_44px_rgba(0,0,0,0.45)] backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">Unique Levi's Admin</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">Unique Levi&apos;s Admin</p>
           <h1 className="mt-2 text-3xl text-slate-100">God Eyes Dashboard</h1>
           <p className="mt-2 text-sm text-slate-300">Approve profile photos, grant verified checkmarks, and control membership tiers.</p>
 

@@ -1,9 +1,27 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createMessage, findUserById, getMessagesByMatch, isUserInMatch, markMessagesRead, matches, } from "../data/store.js";
+import { createMessage, findUserById, flushStorePersistence, getMessagesByMatch, isUserInMatch, markMessagesRead, reloadStorePersistence, matches, } from "../data/store.js";
 import { requireAuth } from "../middleware/auth.js";
+import { getMessageAccessError } from "../utils/membership.js";
 export const messagesRouter = Router();
 const subscribers = [];
+const getMessagingAccessIssue = (userId, matchId) => {
+    const match = matches.find((item) => item.id === matchId);
+    if (!match) {
+        return { message: "Match not found", status: 404 };
+    }
+    const me = findUserById(userId);
+    const otherUserId = match.userA === userId ? match.userB : match.userA;
+    const other = findUserById(otherUserId);
+    if (!me || !other) {
+        return { message: "Match user not found", status: 404 };
+    }
+    const accessError = getMessageAccessError(me.membershipTier, other.membershipTier);
+    if (accessError) {
+        return { message: accessError, status: 403 };
+    }
+    return null;
+};
 const emitToUser = (userId, event, payload) => {
     const body = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
     subscribers
@@ -33,26 +51,43 @@ messagesRouter.get("/messages/:matchId", requireAuth, (req, res) => {
         res.status(403).json({ message: "You are not part of this match" });
         return;
     }
+    const accessIssue = getMessagingAccessIssue(userId, matchId);
+    if (accessIssue) {
+        res.status(accessIssue.status).json({ message: accessIssue.message });
+        return;
+    }
     res.json({ messages: getMessagesByMatch(matchId) });
 });
-messagesRouter.post("/messages/:matchId/read", requireAuth, (req, res) => {
+messagesRouter.post("/messages/:matchId/read", requireAuth, async (req, res) => {
     const userId = req.authUserId;
     const { matchId } = req.params;
     if (!isUserInMatch(matchId, userId)) {
         res.status(403).json({ message: "You are not part of this match" });
         return;
     }
+    const accessIssue = getMessagingAccessIssue(userId, matchId);
+    if (accessIssue) {
+        res.status(accessIssue.status).json({ message: accessIssue.message });
+        return;
+    }
+    await reloadStorePersistence();
     markMessagesRead(matchId, userId);
+    await flushStorePersistence();
     res.json({ ok: true });
 });
 const sendMessageSchema = z.object({
     text: z.string().min(1).max(1000),
 });
-messagesRouter.post("/messages/:matchId", requireAuth, (req, res) => {
+messagesRouter.post("/messages/:matchId", requireAuth, async (req, res) => {
     const userId = req.authUserId;
     const { matchId } = req.params;
     if (!isUserInMatch(matchId, userId)) {
         res.status(403).json({ message: "You are not part of this match" });
+        return;
+    }
+    const accessIssue = getMessagingAccessIssue(userId, matchId);
+    if (accessIssue) {
+        res.status(accessIssue.status).json({ message: accessIssue.message });
         return;
     }
     const parsed = sendMessageSchema.safeParse(req.body);
@@ -60,6 +95,7 @@ messagesRouter.post("/messages/:matchId", requireAuth, (req, res) => {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
     }
+    await reloadStorePersistence();
     const message = createMessage(matchId, userId, parsed.data.text.trim());
     const match = matches.find((m) => m.id === matchId);
     const userA = findUserById(match.userA);
@@ -74,6 +110,7 @@ messagesRouter.post("/messages/:matchId", requireAuth, (req, res) => {
         message,
         from: userA?.id === userId ? userA?.firstName : userB?.firstName,
     });
+    await flushStorePersistence();
     res.status(201).json({ message });
 });
 const typingSchema = z.object({
@@ -84,6 +121,11 @@ messagesRouter.post("/messages/:matchId/typing", requireAuth, (req, res) => {
     const { matchId } = req.params;
     if (!isUserInMatch(matchId, userId)) {
         res.status(403).json({ message: "You are not part of this match" });
+        return;
+    }
+    const accessIssue = getMessagingAccessIssue(userId, matchId);
+    if (accessIssue) {
+        res.status(accessIssue.status).json({ message: accessIssue.message });
         return;
     }
     const parsed = typingSchema.safeParse(req.body);
