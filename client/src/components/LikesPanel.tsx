@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { BillingProvider, IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
 
@@ -9,8 +9,7 @@ type Props = {
   membershipTier?: MembershipTier;
   billingConfig?: {
     providers?: {
-      paystack: { checkoutConfigured: boolean; missing: string[] };
-      opay: { checkoutConfigured: boolean; missing: string[] };
+      flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
   } | null;
   onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => void;
@@ -25,54 +24,23 @@ const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: s
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [preferredProvider, setPreferredProvider] = useState<BillingProvider>("opay");
   const cards = likes.slice(0, 4);
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
-  const providerStatus = billingConfig?.providers;
-  const availableProviders: BillingProvider[] = [];
-  if (!providerStatus || providerStatus.opay.checkoutConfigured) {
-    availableProviders.push("opay");
-  }
-  if (!providerStatus || providerStatus.paystack.checkoutConfigured) {
-    availableProviders.push("paystack");
-  }
-  const selectedProviderAvailable = availableProviders.includes(preferredProvider);
+  const flutterwaveStatus = billingConfig?.providers?.flutterwave;
+  const flutterwaveReady = flutterwaveStatus ? flutterwaveStatus.checkoutConfigured : true;
 
-  useEffect(() => {
-    if (availableProviders.length === 0) return;
-    if (availableProviders.includes(preferredProvider)) return;
-    setPreferredProvider(availableProviders[0]!);
-  }, [availableProviders, preferredProvider]);
+  const unavailableReason = !flutterwaveReady
+    ? "Flutterwave checkout is currently unavailable. Please check gateway setup in admin/deployment settings."
+    : null;
 
-  const opayDisabled = providerStatus ? !providerStatus.opay.checkoutConfigured : false;
-  const paystackDisabled = providerStatus ? !providerStatus.paystack.checkoutConfigured : false;
+  const missingForProvider = flutterwaveStatus?.missing ?? [];
 
-  const unavailableReason = !providerStatus
-    ? null
-    : availableProviders.length === 0
-      ? "Payments are temporarily unavailable. Please check gateway setup in admin/deployment settings."
-      : !selectedProviderAvailable
-        ? `${preferredProvider === "opay" ? "OPay" : "Paystack"} checkout is currently unavailable.`
-        : null;
-
-  const missingForProvider = providerStatus
-    ? preferredProvider === "opay"
-      ? providerStatus.opay.missing
-      : providerStatus.paystack.missing
-    : [];
-
-  const canCheckout = selectedProviderAvailable && availableProviders.length > 0;
-
-  const handleProviderChange = (provider: BillingProvider) => {
-    if (provider === "opay" && opayDisabled) return;
-    if (provider === "paystack" && paystackDisabled) return;
-    setPreferredProvider(provider);
-  };
+  const canCheckout = flutterwaveReady;
 
   const handleUpgradeClick = (plan: PaidMembershipTier) => {
     if (!canCheckout) return;
-    onUpgrade?.(plan, preferredProvider);
+    onUpgrade?.(plan, "flutterwave");
   };
 
   return (
@@ -134,35 +102,7 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
           <p className="text-sm text-[var(--color-text)]">
             Upgrade your membership to unlock likes visibility, messaging, and premium privacy controls.
           </p>
-          <div className="mt-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Payment Provider</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleProviderChange("opay")}
-                disabled={opayDisabled}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                  preferredProvider === "opay"
-                    ? "bg-[var(--color-primary)] text-white"
-                    : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
-                } ${opayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
-              >
-                OPay
-              </button>
-              <button
-                type="button"
-                onClick={() => handleProviderChange("paystack")}
-                disabled={paystackDisabled}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                  preferredProvider === "paystack"
-                    ? "bg-[var(--color-primary)] text-white"
-                    : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
-                } ${paystackDisabled ? "cursor-not-allowed opacity-50" : ""}`}
-              >
-                Paystack
-              </button>
-            </div>
-          </div>
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Payment Provider: Flutterwave</p>
           {unavailableReason && (
             <p className="mt-2 text-xs text-[#8a2445]">{unavailableReason}</p>
           )}

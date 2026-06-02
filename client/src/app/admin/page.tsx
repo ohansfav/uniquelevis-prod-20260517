@@ -26,14 +26,13 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pending, setPending] = useState<VerificationRequest[]>([]);
   const [billingConfig, setBillingConfig] = useState<{
-    provider: "paystack" | "opay";
+    provider: "flutterwave";
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
     planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
     providers?: {
-      paystack: { checkoutConfigured: boolean; missing: string[] };
-      opay: { checkoutConfigured: boolean; missing: string[] };
+      flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
     missing: string[];
   } | null>(null);

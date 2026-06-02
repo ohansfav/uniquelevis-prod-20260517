@@ -15,6 +15,7 @@ import {
   publicUser,
   reloadStorePersistence,
   revokeRefreshSession,
+  revokeUserRefreshSessions,
 } from "../data/store.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -335,12 +336,15 @@ authRouter.post("/auth/refresh", async (req, res) => {
 });
 
 authRouter.post("/auth/logout", requireAuth, async (req, res) => {
+  await reloadStorePersistence();
+  revokeUserRefreshSessions(req.authUserId!);
+
   const parsed = refreshSchema.safeParse(req.body);
   if (parsed.success) {
-    await reloadStorePersistence();
     revokeRefreshSession(parsed.data.refreshToken);
-    await flushStorePersistence();
   }
+
+  await flushStorePersistence();
 
   res.json({ ok: true });
 });

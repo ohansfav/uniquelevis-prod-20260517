@@ -12,6 +12,32 @@
 
 Unique Levi's is a modern dating application designed to provide users with an intuitive, engaging platform to meet and connect with potential matches. The app combines the aesthetic and UX principles of The Full Stack Creators platform with dating-specific features like swiping, messaging, matching, and profile discovery.
 
+## Billing Provider Migration (June 2026)
+
+The backend billing provider is now Flutterwave only.
+
+- Checkout creation: /api/billing/checkout
+- Payment verification: /api/billing/verify-checkout
+- Webhook endpoint: /api/billing/webhook/flutterwave
+
+Required server environment variables:
+
+- FLUTTERWAVE_PUBLIC_KEY
+- FLUTTERWAVE_SECRET_KEY
+- FLUTTERWAVE_ENCRYPTION_KEY
+- FLUTTERWAVE_WEBHOOK_SECRET_HASH
+- FLUTTERWAVE_API_BASE
+- FLUTTERWAVE_PAYMENT_OPTIONS (optional)
+- BILLING_CURRENCY
+- BILLING_AMOUNT_PLATINUM
+- BILLING_AMOUNT_SILVER
+- BILLING_AMOUNT_GOLD
+- BILLING_AMOUNT_DIAMOND
+
+Security note:
+
+- If any live key was shared in screenshots or chat, rotate keys immediately in Flutterwave dashboard before production use.
+
 ### Key Highlights
 - **Tinder-like swiping interface** for core discovery
 - **Comprehensive profiles** with photos, bio, interests, and verified badges

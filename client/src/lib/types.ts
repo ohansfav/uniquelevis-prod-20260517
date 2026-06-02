@@ -1,6 +1,6 @@
 export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
 export type PaidMembershipTier = Exclude<MembershipTier, "free">;
-export type BillingProvider = "paystack" | "opay";
+export type BillingProvider = "flutterwave";
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
 
 export type PublicUser = {

@@ -401,12 +401,53 @@ export default function Home() {
     });
   };
 
-  const clearSessionAndPromptLogin = () => {
+  const resetClientSessionState = (options?: {
+    showAuthForm?: boolean;
+    authMode?: AuthMode;
+    statusMessage?: string;
+  }) => {
     setToken("");
     setRefreshToken("");
+    setCurrentUser(null);
+    setProfile(null);
+    setNeedsOnboarding(false);
+    setIncomingLikes([]);
+    setLikesCount(0);
+    setLikesUnlocked(false);
+    setCards([]);
+    setMatches([]);
+    setSelectedMatchId(null);
+    setMessages([]);
+    setChatLockByMatch({});
+    setTypingByMatch({});
+    setVerificationStatus("none");
+    setBillingConfig(null);
+    setHasBootstrapped(false);
+    setMobileTab("swipe");
+    refreshInFlightRef.current = null;
+    streamFailureCountRef.current = 0;
+    streamRecoveryInFlightRef.current = false;
     localStorage.removeItem("ul_access_token");
     localStorage.removeItem("ul_refresh_token");
-    setShowAuthForm(true);
+    localStorage.removeItem("ul_app_state");
+
+    if (options?.authMode) {
+      setAuthMode(options.authMode);
+    }
+    if (typeof options?.showAuthForm === "boolean") {
+      setShowAuthForm(options.showAuthForm);
+    }
+    if (options?.statusMessage) {
+      setStatus(options.statusMessage);
+    }
+  };
+
+  const clearSessionAndPromptLogin = () => {
+    resetClientSessionState({
+      showAuthForm: true,
+      authMode: "login",
+      statusMessage: "Session ended. Please log in again.",
+    });
   };
 
   const handleStreamFailure = () => {
@@ -778,7 +819,7 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const reference = params.get("reference") ?? params.get("trxref");
     const providerFromQuery = params.get("provider");
-    const provider = providerFromQuery === "opay" ? "opay" : providerFromQuery === "paystack" ? "paystack" : undefined;
+    const provider = providerFromQuery === "flutterwave" ? "flutterwave" : undefined;
     const upgradeStatus = params.get("upgrade");
 
     if (!reference) {
@@ -878,9 +919,25 @@ export default function Home() {
               city,
             });
 
+      setCards([]);
+      setIncomingLikes([]);
+      setLikesCount(0);
+      setLikesUnlocked(false);
+      setMatches([]);
+      setMessages([]);
+      setChatLockByMatch({});
+      setTypingByMatch({});
+      setSelectedMatchId(null);
+      setProfile(null);
+      setNeedsOnboarding(false);
+      setBillingConfig(null);
+      setHasBootstrapped(false);
+      localStorage.removeItem("ul_app_state");
+
       setToken(auth.accessToken);
       setRefreshToken(auth.refreshToken);
       setCurrentUser(auth.user);
+      setShowAuthForm(false);
       localStorage.setItem("ul_access_token", auth.accessToken);
       localStorage.setItem("ul_refresh_token", auth.refreshToken);
       setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
@@ -920,24 +977,10 @@ export default function Home() {
     if (token && refreshToken) {
       void logout(token, refreshToken);
     }
-    setToken("");
-    setRefreshToken("");
-    setCurrentUser(null);
-    setProfile(null);
-    setIncomingLikes([]);
-    setLikesCount(0);
-    setLikesUnlocked(false);
-    setCards([]);
-    setMatches([]);
-    setSelectedMatchId(null);
-    setMessages([]);
-    setChatLockByMatch({});
-    setTypingByMatch({});
-    setVerificationStatus("none");
-    setMobileTab("swipe");
-    setShowAuthForm(false);
-    localStorage.removeItem("ul_app_state");
-    setStatus("Signed out.");
+    resetClientSessionState({
+      showAuthForm: false,
+      statusMessage: "Signed out.",
+    });
   };
 
   const handleRefresh = async () => {
@@ -1132,8 +1175,10 @@ export default function Home() {
     if (!token) return;
 
     try {
-      let provider: BillingProvider | undefined = selectedProvider;
-      if (!provider) {
+      let provider: BillingProvider | undefined;
+      if (selectedProvider === "flutterwave") {
+        provider = selectedProvider;
+      } else {
         try {
           const config = await getBillingConfig();
           provider = config.provider;

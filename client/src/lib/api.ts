@@ -419,8 +419,7 @@ export const getBillingConfig = async () => {
     publicKeyConfigured: boolean;
     planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
     providers?: {
-      paystack: { checkoutConfigured: boolean; missing: string[] };
-      opay: { checkoutConfigured: boolean; missing: string[] };
+      flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
     missing: string[];
     checkoutMissing: string[];

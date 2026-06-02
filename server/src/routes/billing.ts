@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import express, { Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env.js";
@@ -8,77 +8,68 @@ import { requireAuth } from "../middleware/auth.js";
 export const billingRouter = Router();
 export const billingWebhookRouter = Router();
 
-type PaymentProvider = "paystack" | "opay";
+type PaymentProvider = "flutterwave";
 type PaidPlan = "platinum" | "silver" | "gold" | "diamond";
 
 const paidPlanSchema = z.enum(["platinum", "silver", "gold", "diamond"]);
-const paymentProviderSchema = z.enum(["paystack", "opay"]);
+const paymentProviderSchema = z.enum(["flutterwave"]);
+const PAYMENT_IDEMPOTENCY_TTL_MS = 1000 * 60 * 60 * 24;
 
-const webhookPayloadSchema = z.object({
-  event: z.string(),
-  data: z.object({
-    metadata: z
-      .object({
-        userId: z.string().optional(),
-        plan: paidPlanSchema.optional(),
-      })
-      .optional(),
-  }),
+const processedPaymentReferences = new Map<string, {
+  userId: string;
+  plan: PaidPlan;
+  processedAt: number;
+}>();
+
+const cleanupProcessedPaymentReferences = () => {
+  const cutoff = Date.now() - PAYMENT_IDEMPOTENCY_TTL_MS;
+  for (const [reference, details] of processedPaymentReferences.entries()) {
+    if (details.processedAt < cutoff) {
+      processedPaymentReferences.delete(reference);
+    }
+  }
+};
+
+const getProcessedPaymentReference = (reference: string) => {
+  cleanupProcessedPaymentReferences();
+  return processedPaymentReferences.get(reference);
+};
+
+const markPaymentReferenceProcessed = (reference: string, userId: string, plan: PaidPlan) => {
+  cleanupProcessedPaymentReferences();
+  processedPaymentReferences.set(reference, {
+    userId,
+    plan,
+    processedAt: Date.now(),
+  });
+};
+
+const flutterwaveWebhookSchema = z.object({
+  event: z.string().optional(),
+  data: z
+    .object({
+      tx_ref: z.string().optional(),
+      status: z.string().optional(),
+      amount: z.number().optional(),
+      currency: z.string().optional(),
+      meta: z
+        .object({
+          userId: z.string().optional(),
+          plan: paidPlanSchema.optional(),
+        })
+        .passthrough()
+        .optional(),
+    })
+    .passthrough(),
 });
 
-const opayWebhookSchema = z.object({
-  payload: z.object({
-    reference: z.string(),
-    status: z.string(),
-  }),
-  sha512: z.string().optional(),
-  type: z.string().optional(),
-});
+const isFlutterwaveConfigured = () => Boolean(env.FLUTTERWAVE_SECRET_KEY);
 
-const isPaystackWebhookSignatureValid = (rawBody: Buffer, signatureHeader: string, webhookSecret: string) => {
-  const expected = createHmac("sha512", webhookSecret).update(rawBody).digest("hex");
-  const expectedBuffer = Buffer.from(expected);
-  const candidate = Buffer.from(signatureHeader);
-
-  if (candidate.length !== expectedBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(candidate, expectedBuffer);
-};
-
-const isOpayConfigured = () => Boolean(env.OPAY_PUBLIC_KEY && env.OPAY_PRIVATE_KEY && env.OPAY_MERCHANT_ID);
-const isPaystackConfigured = () => Boolean(env.PAYSTACK_SECRET_KEY);
-
-const resolveActiveProvider = (): PaymentProvider => {
-  if (env.BILLING_DEFAULT_PROVIDER === "opay" && isOpayConfigured()) {
-    return "opay";
-  }
-  if (env.BILLING_DEFAULT_PROVIDER === "paystack" && isPaystackConfigured()) {
-    return "paystack";
-  }
-  if (isOpayConfigured()) {
-    return "opay";
-  }
-  return "paystack";
-};
-
-const resolveCheckoutProvider = (requested?: PaymentProvider): PaymentProvider => {
-  if (requested === "opay") {
-    return "opay";
-  }
-  if (requested === "paystack") {
-    return "paystack";
-  }
-  return resolveActiveProvider();
-};
+const resolveActiveProvider = (): PaymentProvider => "flutterwave";
 
 const safeRouteUrl = (path: string) => new URL(path, env.APP_BASE_URL);
 
-const opayApiBase = () => (env.OPAY_API_BASE || "https://liveapi.opaycheckout.com").replace(/\/$/, "");
-
-const opaySignature = (payload: unknown) =>
-  createHmac("sha512", env.OPAY_PRIVATE_KEY).update(JSON.stringify(payload)).digest("hex");
+const flutterwaveApiBase = () => (env.FLUTTERWAVE_API_BASE || "https://api.flutterwave.com").replace(/\/$/, "");
 
 const parseReferencePayload = (reference: string) => {
   const parsed = /^ul_([^_]+)_(platinum|silver|gold|diamond)_\d+$/i.exec(reference);
@@ -90,84 +81,57 @@ const parseReferencePayload = (reference: string) => {
 };
 
 const resolveAmount = (plan: PaidPlan) => {
-  if (plan === "platinum") return env.PAYSTACK_AMOUNT_PLATINUM;
-  if (plan === "silver") return env.PAYSTACK_AMOUNT_SILVER;
-  if (plan === "gold") return env.PAYSTACK_AMOUNT_GOLD;
-  return env.PAYSTACK_AMOUNT_DIAMOND;
+  if (plan === "platinum") return env.BILLING_AMOUNT_PLATINUM;
+  if (plan === "silver") return env.BILLING_AMOUNT_SILVER;
+  if (plan === "gold") return env.BILLING_AMOUNT_GOLD;
+  return env.BILLING_AMOUNT_DIAMOND;
 };
 
-const isOpayCallbackSignatureValid = (payload: unknown, providedSha512: string, privateKey: string) => {
-  const expected = createHmac("sha512", privateKey).update(JSON.stringify(payload)).digest("hex");
-  return expected.toLowerCase() === providedSha512.toLowerCase();
+const isSafeHeaderMatch = (expected: string, candidate: string) => {
+  const expectedBuffer = Buffer.from(expected);
+  const candidateBuffer = Buffer.from(candidate);
+  if (expectedBuffer.length !== candidateBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(expectedBuffer, candidateBuffer);
 };
 
-billingWebhookRouter.post("/billing/webhook/paystack", express.raw({ type: "application/json" }), (req, res) => {
-  if (!env.PAYSTACK_WEBHOOK_SECRET) {
-    res.status(501).json({ message: "Paystack webhook secret is not configured" });
+billingWebhookRouter.post("/billing/webhook/flutterwave", express.json(), (req, res) => {
+  if (!env.FLUTTERWAVE_WEBHOOK_SECRET_HASH) {
+    res.status(501).json({ message: "Flutterwave webhook secret hash is not configured" });
     return;
   }
 
-  const signatureHeader = req.header("x-paystack-signature");
-  if (!signatureHeader || !Buffer.isBuffer(req.body)) {
-    res.status(400).json({ message: "Missing Paystack signature or raw body" });
+  const signatureHeader = req.header("verif-hash") ?? "";
+  if (!signatureHeader || !isSafeHeaderMatch(env.FLUTTERWAVE_WEBHOOK_SECRET_HASH, signatureHeader)) {
+    res.status(400).json({ message: "Invalid Flutterwave webhook signature" });
     return;
   }
 
-  const isValid = isPaystackWebhookSignatureValid(req.body, signatureHeader, env.PAYSTACK_WEBHOOK_SECRET);
-  if (!isValid) {
-    res.status(400).json({ message: "Invalid Paystack signature" });
-    return;
-  }
-
-  let rawEventPayload: unknown;
-  try {
-    rawEventPayload = JSON.parse(req.body.toString("utf-8"));
-  } catch {
-    res.status(400).json({ message: "Invalid JSON body" });
-    return;
-  }
-
-  const parsedEvent = webhookPayloadSchema.safeParse(rawEventPayload);
-  if (!parsedEvent.success) {
-    res.status(400).json({ message: "Invalid Paystack event payload", issues: parsedEvent.error.issues });
-    return;
-  }
-
-  const event = parsedEvent.data;
-  if (event.event === "charge.success") {
-    const userId = event.data.metadata?.userId;
-    const plan = event.data.metadata?.plan;
-
-    if (userId && plan) {
-      setMembershipTier(userId, plan);
-    }
-  }
-
-  res.json({ received: true });
-});
-
-billingWebhookRouter.post("/billing/webhook/opay", express.json(), (req, res) => {
-  if (!env.OPAY_PRIVATE_KEY) {
-    res.status(501).json({ message: "OPay private key is not configured" });
-    return;
-  }
-
-  const parsed = opayWebhookSchema.safeParse(req.body);
+  const parsed = flutterwaveWebhookSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Invalid OPay callback payload", issues: parsed.error.issues });
+    res.status(400).json({ message: "Invalid Flutterwave webhook payload", issues: parsed.error.issues });
     return;
   }
 
   const event = parsed.data;
-  if (event.sha512 && !isOpayCallbackSignatureValid(event.payload, event.sha512, env.OPAY_PRIVATE_KEY)) {
-    res.status(400).json({ message: "Invalid OPay callback signature" });
-    return;
-  }
+  const eventStatus = event.data.status?.toLowerCase();
+  if (eventStatus === "successful") {
+    const reference = event.data.tx_ref;
+    const metadata = event.data.meta;
+    const parsedReference = reference ? parseReferencePayload(reference) : null;
+    const userId = metadata?.userId ?? parsedReference?.userId;
+    const plan = metadata?.plan ?? parsedReference?.plan;
 
-  if (event.payload.status.toUpperCase() === "SUCCESS") {
-    const parsedReference = parseReferencePayload(event.payload.reference);
-    if (parsedReference) {
-      setMembershipTier(parsedReference.userId, parsedReference.plan);
+    if (userId && plan && reference) {
+      const processed = getProcessedPaymentReference(reference);
+      if (processed) {
+        res.json({ received: true, idempotent: true });
+        return;
+      }
+
+      setMembershipTier(userId, plan);
+      markPaymentReferenceProcessed(reference, userId, plan);
     }
   }
 
@@ -188,7 +152,7 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
     return;
   }
 
-  const provider = resolveCheckoutProvider(parsed.data.provider);
+  const provider = resolveActiveProvider();
   const userId = req.authUserId!;
   const user = findUserById(userId);
   if (!user) {
@@ -205,93 +169,43 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
   const successUrl = safeRouteUrl(parsed.data.successPath ?? "/?upgrade=success");
   const cancelUrl = safeRouteUrl(parsed.data.cancelPath ?? "/?upgrade=cancelled");
 
-  if (provider === "paystack") {
-    if (!env.PAYSTACK_SECRET_KEY) {
-      res.status(501).json({ message: "Paystack is not configured" });
-      return;
-    }
-
-    try {
-      const response = await fetch("https://api.paystack.co/transaction/initialize", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: user.email,
-          amount,
-          callback_url: successUrl.toString(),
-          metadata: {
-            userId: user.id,
-            plan: parsed.data.plan,
-            cancelUrl: cancelUrl.toString(),
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const details = await response.text().catch(() => "");
-        res.status(502).json({ message: `Paystack checkout creation failed: ${details || response.statusText}` });
-        return;
-      }
-
-      const payload = (await response.json()) as {
-        status: boolean;
-        data?: { authorization_url?: string; reference?: string };
-      };
-      res.json({
-        ok: true,
-        provider,
-        checkoutUrl: payload.data?.authorization_url ?? null,
-        sessionId: payload.data?.reference ?? "",
-      });
-    } catch {
-      res.status(502).json({ message: "Unable to connect to Paystack" });
-    }
-    return;
-  }
-
-  if (!isOpayConfigured()) {
-    res.status(501).json({ message: "OPay is not configured" });
+  if (!isFlutterwaveConfigured()) {
+    res.status(501).json({ message: "Flutterwave is not configured" });
     return;
   }
 
   const reference = `ul_${user.id}_${parsed.data.plan}_${Date.now()}`;
-  successUrl.searchParams.set("provider", "opay");
+  successUrl.searchParams.set("provider", provider);
   successUrl.searchParams.set("reference", reference);
-  cancelUrl.searchParams.set("provider", "opay");
+  cancelUrl.searchParams.set("provider", provider);
   cancelUrl.searchParams.set("reference", reference);
 
   const requestPayload = {
-    country: env.OPAY_COUNTRY,
-    reference,
-    amount: {
-      total: amount,
-      currency: "NGN",
+    tx_ref: reference,
+    amount,
+    currency: env.BILLING_CURRENCY,
+    redirect_url: successUrl.toString(),
+    payment_options: env.FLUTTERWAVE_PAYMENT_OPTIONS || undefined,
+    customer: {
+      email: user.email,
+      name: user.firstName,
     },
-    returnUrl: successUrl.toString(),
-    callbackUrl: `${env.APP_BASE_URL}/api/billing/webhook/opay`,
-    cancelUrl: cancelUrl.toString(),
-    userInfo: {
-      userEmail: user.email,
-      userId: user.id,
-      userName: user.firstName,
-    },
-    product: {
-      name: `Unique Levi's ${parsed.data.plan.toUpperCase()} Membership`,
+    customizations: {
+      title: `Unique Levi's ${parsed.data.plan.toUpperCase()} Membership`,
       description: `Upgrade to ${parsed.data.plan.toUpperCase()} tier`,
     },
-    customerVisitSource: "BROWSER",
-    payMethod: env.OPAY_PAY_METHOD || undefined,
+    meta: {
+      userId: user.id,
+      plan: parsed.data.plan,
+      cancelUrl: cancelUrl.toString(),
+    },
   };
 
   try {
-    const response = await fetch(`${opayApiBase()}/api/v1/international/cashier/create`, {
+    const response = await fetch(`${flutterwaveApiBase()}/v3/payments`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.OPAY_PUBLIC_KEY}`,
-        MerchantId: env.OPAY_MERCHANT_ID,
+        Authorization: `Bearer ${env.FLUTTERWAVE_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
@@ -299,75 +213,63 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
 
     if (!response.ok) {
       const details = await response.text().catch(() => "");
-      res.status(502).json({ message: `OPay checkout creation failed: ${details || response.statusText}` });
+      res.status(502).json({ message: `Flutterwave checkout creation failed: ${details || response.statusText}` });
       return;
     }
 
     const payload = (await response.json()) as {
-      code?: string;
+      status?: string;
       message?: string;
-      data?: { cashierUrl?: string; reference?: string; orderNo?: string };
+      data?: { link?: string };
     };
 
-    if (payload.code !== "00000") {
-      res.status(502).json({ message: `OPay checkout creation failed: ${payload.message || "Unknown error"}` });
+    if (payload.status !== "success" || !payload.data?.link) {
+      res.status(502).json({ message: `Flutterwave checkout creation failed: ${payload.message || "Unknown error"}` });
       return;
     }
 
     res.json({
       ok: true,
       provider,
-      checkoutUrl: payload.data?.cashierUrl ?? null,
-      sessionId: payload.data?.orderNo ?? payload.data?.reference ?? reference,
+      checkoutUrl: payload.data.link,
+      sessionId: reference,
       reference,
     });
   } catch {
-    res.status(502).json({ message: "Unable to connect to OPay" });
+    res.status(502).json({ message: "Unable to connect to Flutterwave" });
   }
 });
 
 billingRouter.get("/billing/config", (_req, res) => {
   const planAmounts = {
-    platinum: env.PAYSTACK_AMOUNT_PLATINUM,
-    silver: env.PAYSTACK_AMOUNT_SILVER,
-    gold: env.PAYSTACK_AMOUNT_GOLD,
-    diamond: env.PAYSTACK_AMOUNT_DIAMOND,
+    platinum: env.BILLING_AMOUNT_PLATINUM,
+    silver: env.BILLING_AMOUNT_SILVER,
+    gold: env.BILLING_AMOUNT_GOLD,
+    diamond: env.BILLING_AMOUNT_DIAMOND,
   };
 
-  const paystackCheckoutMissing: string[] = [];
-  if (!env.PAYSTACK_SECRET_KEY) paystackCheckoutMissing.push("PAYSTACK_SECRET_KEY");
-  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) paystackCheckoutMissing.push("PAYSTACK_AMOUNT_PLATINUM");
-  if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) paystackCheckoutMissing.push("PAYSTACK_AMOUNT_SILVER");
-  if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) paystackCheckoutMissing.push("PAYSTACK_AMOUNT_GOLD");
-  if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) paystackCheckoutMissing.push("PAYSTACK_AMOUNT_DIAMOND");
-
-  const opayCheckoutMissing: string[] = [];
-  if (!env.OPAY_PUBLIC_KEY) opayCheckoutMissing.push("OPAY_PUBLIC_KEY");
-  if (!env.OPAY_PRIVATE_KEY) opayCheckoutMissing.push("OPAY_PRIVATE_KEY");
-  if (!env.OPAY_MERCHANT_ID) opayCheckoutMissing.push("OPAY_MERCHANT_ID");
-  if (!env.OPAY_COUNTRY) opayCheckoutMissing.push("OPAY_COUNTRY");
-
-  const checkoutMissing = resolveActiveProvider() === "opay" ? opayCheckoutMissing : paystackCheckoutMissing;
+  const checkoutMissing: string[] = [];
+  if (!env.FLUTTERWAVE_SECRET_KEY) checkoutMissing.push("FLUTTERWAVE_SECRET_KEY");
+  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) checkoutMissing.push("BILLING_AMOUNT_PLATINUM");
+  if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) checkoutMissing.push("BILLING_AMOUNT_SILVER");
+  if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) checkoutMissing.push("BILLING_AMOUNT_GOLD");
+  if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) checkoutMissing.push("BILLING_AMOUNT_DIAMOND");
 
   const optionalMissing: string[] = [];
-  if (!env.PAYSTACK_WEBHOOK_SECRET) optionalMissing.push("PAYSTACK_WEBHOOK_SECRET");
-  if (!env.PAYSTACK_PUBLIC_KEY) optionalMissing.push("PAYSTACK_PUBLIC_KEY");
-  if (!env.OPAY_WEBHOOK_SECRET) optionalMissing.push("OPAY_WEBHOOK_SECRET");
+  if (!env.FLUTTERWAVE_WEBHOOK_SECRET_HASH) optionalMissing.push("FLUTTERWAVE_WEBHOOK_SECRET_HASH");
+  if (!env.FLUTTERWAVE_PUBLIC_KEY) optionalMissing.push("FLUTTERWAVE_PUBLIC_KEY");
+  if (!env.FLUTTERWAVE_ENCRYPTION_KEY) optionalMissing.push("FLUTTERWAVE_ENCRYPTION_KEY");
 
   res.json({
     provider: resolveActiveProvider(),
     checkoutConfigured: checkoutMissing.length === 0,
-    webhookConfigured: Boolean(env.PAYSTACK_WEBHOOK_SECRET),
-    publicKeyConfigured: Boolean(env.PAYSTACK_PUBLIC_KEY),
+    webhookConfigured: Boolean(env.FLUTTERWAVE_WEBHOOK_SECRET_HASH),
+    publicKeyConfigured: Boolean(env.FLUTTERWAVE_PUBLIC_KEY),
     planAmounts,
     providers: {
-      paystack: {
-        checkoutConfigured: paystackCheckoutMissing.length === 0,
-        missing: paystackCheckoutMissing,
-      },
-      opay: {
-        checkoutConfigured: opayCheckoutMissing.length === 0,
-        missing: opayCheckoutMissing,
+      flutterwave: {
+        checkoutConfigured: checkoutMissing.length === 0,
+        missing: checkoutMissing,
       },
     },
     missing: [...checkoutMissing, ...optionalMissing],
@@ -394,117 +296,83 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
     return;
   }
 
-  const provider = resolveCheckoutProvider(parsed.data.provider);
+  const provider = resolveActiveProvider();
   const userId = req.authUserId!;
 
-  if (provider === "opay") {
-    if (!isOpayConfigured()) {
-      res.status(501).json({ message: "OPay is not configured" });
-      return;
-    }
-
-    const parsedReference = parseReferencePayload(parsed.data.reference);
-    if (!parsedReference) {
-      res.status(422).json({ message: "Invalid OPay reference format" });
-      return;
-    }
-
-    if (parsedReference.userId !== userId) {
-      res.status(403).json({ message: "This OPay transaction does not belong to the authenticated user" });
-      return;
-    }
-
-    const statusPayload = {
-      reference: parsed.data.reference,
-      country: env.OPAY_COUNTRY,
-    };
-
-    try {
-      const response = await fetch(`${opayApiBase()}/api/v1/international/cashier/status`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${opaySignature(statusPayload)}`,
-          MerchantId: env.OPAY_MERCHANT_ID,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(statusPayload),
-      });
-
-      if (!response.ok) {
-        const details = await response.text().catch(() => "");
-        res.status(502).json({ message: `OPay verification failed: ${details || response.statusText}` });
-        return;
-      }
-
-      const payload = (await response.json()) as {
-        code?: string;
-        message?: string;
-        data?: {
-          status?: string;
-          amount?: { total?: number };
-        };
-      };
-
-      if (payload.code !== "00000") {
-        res.status(502).json({ message: `OPay verification failed: ${payload.message || "Unknown error"}` });
-        return;
-      }
-
-      if (payload.data?.status !== "SUCCESS") {
-        res.status(409).json({ message: "Transaction is not successful yet" });
-        return;
-      }
-
-      const expectedAmount = resolveAmount(parsedReference.plan);
-      const paidAmount = payload.data?.amount?.total;
-      if (typeof paidAmount !== "number" || paidAmount < expectedAmount) {
-        res.status(409).json({ message: "Verified payment amount is lower than the selected plan price" });
-        return;
-      }
-
-      const updated = setMembershipTier(userId, parsedReference.plan);
-      if (!updated) {
-        res.status(404).json({ message: "User not found" });
-        return;
-      }
-
-      res.json({ ok: true, provider, tier: parsedReference.plan, reference: parsed.data.reference });
-    } catch {
-      res.status(502).json({ message: "Unable to verify payment with OPay" });
-    }
+  const parsedReference = parseReferencePayload(parsed.data.reference);
+  if (!parsedReference) {
+    res.status(422).json({ message: "Invalid Flutterwave reference format" });
     return;
   }
 
-  if (!env.PAYSTACK_SECRET_KEY) {
-    res.status(501).json({ message: "Paystack secret key is not configured" });
+  const processed = getProcessedPaymentReference(parsed.data.reference);
+  if (processed) {
+    if (processed.userId !== userId) {
+      res.status(403).json({ message: "This transaction does not belong to the authenticated user" });
+      return;
+    }
+    res.json({
+      ok: true,
+      provider,
+      tier: processed.plan,
+      reference: parsed.data.reference,
+      alreadyProcessed: true,
+    });
+    return;
+  }
+
+  if (parsedReference.userId !== userId) {
+    res.status(403).json({ message: "This transaction does not belong to the authenticated user" });
+    return;
+  }
+
+  if (!env.FLUTTERWAVE_SECRET_KEY) {
+    res.status(501).json({ message: "Flutterwave secret key is not configured" });
     return;
   }
 
   try {
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(parsed.data.reference)}`, {
+    const response = await fetch(
+      `${flutterwaveApiBase()}/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(parsed.data.reference)}`,
+      {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${env.FLUTTERWAVE_SECRET_KEY}`,
       },
-    });
+      },
+    );
 
     if (!response.ok) {
       const details = await response.text().catch(() => "");
-      res.status(502).json({ message: `Paystack verification failed: ${details || response.statusText}` });
+      res.status(502).json({ message: `Flutterwave verification failed: ${details || response.statusText}` });
       return;
     }
 
     const payload = (await response.json()) as {
-      status: boolean;
+      status?: string;
+      message?: string;
       data?: {
         status?: string;
-        metadata?: { userId?: string; plan?: "platinum" | "silver" | "gold" | "diamond" };
+        tx_ref?: string;
+        amount?: number;
+        currency?: string;
+        meta?: { userId?: string; plan?: PaidPlan };
       };
     };
 
-    const paid = payload.data?.status === "success";
-    const metadataUserId = payload.data?.metadata?.userId;
-    const plan = payload.data?.metadata?.plan;
+    if (payload.status !== "success") {
+      res.status(502).json({ message: `Flutterwave verification failed: ${payload.message || "Unknown error"}` });
+      return;
+    }
+
+    if (payload.data?.tx_ref !== parsed.data.reference) {
+      res.status(409).json({ message: "Verified transaction reference does not match request" });
+      return;
+    }
+
+    const paid = payload.data?.status?.toLowerCase() === "successful";
+    const metadataUserId = payload.data?.meta?.userId;
+    const plan = payload.data?.meta?.plan ?? parsedReference.plan;
 
     if (!paid) {
       res.status(409).json({ message: "Transaction is not successful yet" });
@@ -517,7 +385,21 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
     }
 
     if (!metadataUserId || metadataUserId !== userId) {
-      res.status(403).json({ message: "This transaction does not belong to the authenticated user" });
+      if (metadataUserId) {
+        res.status(403).json({ message: "This transaction does not belong to the authenticated user" });
+        return;
+      }
+    }
+
+    const expectedAmount = resolveAmount(plan);
+    const paidAmount = payload.data?.amount;
+    if (typeof paidAmount !== "number" || paidAmount < expectedAmount) {
+      res.status(409).json({ message: "Verified payment amount is lower than the selected plan price" });
+      return;
+    }
+
+    if (payload.data?.currency && payload.data.currency.toUpperCase() !== env.BILLING_CURRENCY.toUpperCase()) {
+      res.status(409).json({ message: "Verified payment currency does not match configured billing currency" });
       return;
     }
 
@@ -527,9 +409,11 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
       return;
     }
 
+    markPaymentReferenceProcessed(parsed.data.reference, userId, plan);
+
     res.json({ ok: true, provider, tier: plan, reference: parsed.data.reference });
   } catch {
-    res.status(502).json({ message: "Unable to verify payment with Paystack" });
+    res.status(502).json({ message: "Unable to verify payment with Flutterwave" });
   }
 });
 
