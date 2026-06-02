@@ -534,6 +534,13 @@ export default function Home() {
 
   const restartDeck = async () => {
     if (!token) return;
+    setSwipeOption("for-you");
+    setSwipeFilters({
+      distance: "Any",
+      ageRange: "21-28",
+      intent: "All",
+      verifiedOnly: false,
+    });
     setStatus("Restarting your deck with fresh profile order...");
     await loadDiscoverDeck(token, { recycle: true, allowRecycle: false });
   };
@@ -1186,16 +1193,20 @@ export default function Home() {
     if (!token) return;
 
     try {
+      const config = await getBillingConfig();
+      setBillingConfig(config);
+
+      if (!config.checkoutConfigured) {
+        const missing = config.checkoutMissing?.length ? ` Missing: ${config.checkoutMissing.join(", ")}.` : "";
+        setError(`Checkout is not configured on the server.${missing}`);
+        return;
+      }
+
       let provider: BillingProvider | undefined;
       if (selectedProvider === "flutterwave") {
         provider = selectedProvider;
       } else {
-        try {
-          const config = await getBillingConfig();
-          provider = config.provider;
-        } catch {
-          provider = undefined;
-        }
+        provider = config.provider;
       }
 
       const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan, provider));

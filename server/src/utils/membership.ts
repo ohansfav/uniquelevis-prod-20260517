@@ -12,17 +12,10 @@ export const canSeeIncomingLikes = (tier?: MembershipTier) =>
 export const canDirectMessage = (_tier?: MembershipTier) => true;
 
 export const canViewProfile = (viewerTier?: MembershipTier, targetTier?: MembershipTier) => {
-  const viewer = resolveMembershipTier(viewerTier);
-  const target = resolveMembershipTier(targetTier);
-
-  if (target === "gold") {
-    return viewer === "silver" || viewer === "gold" || viewer === "diamond";
-  }
-
-  if (target === "diamond") {
-    return viewer === "gold" || viewer === "diamond";
-  }
-
+  // Discover and matches should remain usable for all authenticated users.
+  // Keep visibility open and reserve tier logic for feature upsells.
+  void viewerTier;
+  void targetTier;
   return true;
 };
 
