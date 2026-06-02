@@ -71,6 +71,10 @@ const readErrorMessage = async (res: Response, fallback: string) => {
     return `${fallback}. API route not found. Deployment proxy may be misconfigured.`;
   }
 
+  if (res.status === 431) {
+    return `${fallback}. Request headers were too large. Please sign out and sign in again.`;
+  }
+
   return `${fallback}. Please try again.`;
 };
 

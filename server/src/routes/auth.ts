@@ -29,9 +29,7 @@ const toSessionProfile = (user: UserRecord | null | undefined) => {
     firstName: user.firstName,
     age: user.age,
     city: user.city,
-    bio: user.bio,
-    interests: user.interests,
-    photos: user.photos,
+    // Keep JWT payload lean to avoid oversized Authorization headers.
     datingIntent: user.datingIntent,
     membershipTier: user.membershipTier,
     verified: user.verified,

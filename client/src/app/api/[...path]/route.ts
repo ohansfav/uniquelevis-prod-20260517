@@ -19,18 +19,34 @@ const HOP_BY_HOP_RESPONSE_HEADERS = [
 
 const filterHeaders = (request: NextRequest) => {
   const headers = new Headers();
-  for (const [key, value] of request.headers.entries()) {
-    const lower = key.toLowerCase();
-    if (
-      lower === "host" ||
-      lower === "content-length" ||
-      lower === "connection" ||
-      lower === "accept-encoding"
-    ) {
-      continue;
+  const passThroughHeaders = [
+    "authorization",
+    "content-type",
+    "accept",
+    "cache-control",
+    "if-none-match",
+    "if-modified-since",
+    "last-event-id",
+    "x-requested-with",
+  ];
+
+  for (const key of passThroughHeaders) {
+    const value = request.headers.get(key);
+    if (value) {
+      headers.set(key, value);
     }
-    headers.set(key, value);
   }
+
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    headers.set("x-forwarded-for", forwardedFor);
+  }
+
+  const userAgent = request.headers.get("user-agent");
+  if (userAgent) {
+    headers.set("user-agent", userAgent);
+  }
+
   return headers;
 };
 
