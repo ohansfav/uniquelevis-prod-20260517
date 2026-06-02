@@ -431,7 +431,11 @@ export default function Home() {
     localStorage.removeItem("ul_refresh_token");
     localStorage.removeItem("ul_app_state");
 
-    if (options?.authMode) {
+  setHumanChallengeId("");
+  setHumanPrompt("");
+  setHumanAnswer("");
+
+  if (options?.authMode) {
       setAuthMode(options.authMode);
     }
     if (typeof options?.showAuthForm === "boolean") {
@@ -573,7 +577,7 @@ export default function Home() {
     }
   };
 
-  const bootstrapData = async (authToken: string) => {
+  const bootstrapData = async (authToken: string, attempt = 0) => {
     try {
       // Use authToken directly here — bootstrapData is called right after login where
       // the React state for token/refreshToken may still be stale (""). Using the
@@ -659,10 +663,17 @@ export default function Home() {
         return;
       }
 
+      // Retry once after 2 s to handle Vercel cold starts and mobile network blips.
+      if (attempt === 0) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 2000));
+        return bootstrapData(authToken, 1);
+      }
+
       setError("We could not load your feed right now. Please refresh or try again shortly.");
-    } finally {
       setHasBootstrapped(true);
+      return;
     }
+    setHasBootstrapped(true);
   };
 
   useEffect(() => {
@@ -723,7 +734,7 @@ export default function Home() {
   }, [authReady, mobileTab, selectedMatchId, swipeFilters, swipeOption]);
 
   useEffect(() => {
-    if (authMode !== "login") return;
+    if (authMode !== "login" || !showAuthForm) return;
     let mounted = true;
     let retries = 0;
     const fetchChallenge = () => {
@@ -750,7 +761,7 @@ export default function Home() {
     return () => {
       mounted = false;
     };
-  }, [authMode]);
+  }, [authMode, showAuthForm]);
 
   useEffect(() => {
     if (token) {
