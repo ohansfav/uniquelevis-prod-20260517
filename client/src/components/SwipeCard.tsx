@@ -57,10 +57,12 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
     <article
       className="relative w-full h-full overflow-hidden rounded-[2rem] bg-black select-none"
       style={{
-        transform: `translateX(${deltaX * 0.22}px) rotate(${deltaX * 0.025}deg)`,
-        transition: startX === null ? "transform 220ms ease" : "none",
+        transform: `translateX(${deltaX * 0.22}px) rotate(${deltaX * 0.025}deg) translateZ(0)`,
+        transition: startX === null ? "transform 200ms ease-out" : "none",
         touchAction: "pan-y",
         boxShadow: "0 26px 45px rgba(18,12,30,0.3)",
+        willChange: "transform",
+        backfaceVisibility: "hidden",
       }}
       onPointerDown={(e) => { setStartX(e.clientX); }}
       onPointerMove={(e) => handleDragMove(e.clientX)}

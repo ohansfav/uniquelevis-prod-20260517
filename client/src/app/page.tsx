@@ -292,7 +292,7 @@ export default function Home() {
   const [typingByMatch, setTypingByMatch] = useState<Record<string, string | null>>({});
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("none");
   const [loading, setLoading] = useState(false);
-  const [isSwiping, setIsSwiping] = useState(false);
+  const swipingCardIdRef = useRef<string | null>(null);
   const [status, setStatus] = useState("Welcome to Unique Levi's. Let's find your person.");
   const [error, setError] = useState<string | null>(null);
   const [billingConfig, setBillingConfig] = useState<BillingConfigState | null>(null);
@@ -312,6 +312,9 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new Event("ul-app-ready"));
+    // Silently warm up the backend serverless function so the first real request
+    // doesn't stall on a cold start (Vercel functions sleep after inactivity).
+    void fetch("/api/health", { method: "GET", cache: "no-store" }).catch(() => {});
   }, []);
 
   const activeCard = useMemo(() => cards[0], [cards]);
@@ -1248,22 +1251,34 @@ export default function Home() {
   };
 
   const onSwipe = async (type: "like" | "skip" | "super_like") => {
-    if (!activeCard || !token || isSwiping) return;
+    if (!activeCard || !token) return;
+    if (swipingCardIdRef.current === activeCard.id) return;
 
-    setIsSwiping(true);
-    setError(null);
-    const swipedId = activeCard.id;
-    const swipedName = activeCard.firstName;
+    const swipedCard = activeCard;
+    const swipedId = swipedCard.id;
+    const swipedName = swipedCard.firstName;
     const previousCount = cards.length;
+
+    // Optimistic: remove the card and release the UI lock immediately.
+    // The API call fires in the background — next card is swipeable right away.
+    swipingCardIdRef.current = swipedId;
+    setError(null);
     setCards((prev) => prev.slice(1));
+    if (type === "like") setStatus(`Liked ${swipedName}. Keep swiping for a match.`);
+    if (type === "super_like") setStatus(`Super liked ${swipedName}. Fingers crossed.`);
+    if (type === "skip") setStatus(`Passed on ${swipedName}.`);
+    swipingCardIdRef.current = null; // unblock for next card
 
     try {
       const response = await withSessionRecovery((authToken) => sendSwipe(authToken, swipedId, type));
       if (response.match) {
         setStatus(`It's a match with ${swipedName}. Jump into chat and say hello.`);
-        const nextMatches = await withSessionRecovery((authToken) => getMatches(authToken));
+        // Fetch matches + likes in parallel instead of sequentially.
+        const [nextMatches, nextLikes] = await Promise.all([
+          withSessionRecovery((authToken) => getMatches(authToken)),
+          withSessionRecovery((authToken) => getIncomingLikes(authToken)),
+        ]);
         setMatches(nextMatches);
-        const nextLikes = await withSessionRecovery((authToken) => getIncomingLikes(authToken));
         setIncomingLikes(nextLikes.likes);
         setLikesCount(nextLikes.count);
         setLikesUnlocked(nextLikes.canViewLikes);
@@ -1285,10 +1300,6 @@ export default function Home() {
             throw messageError;
           }
         }
-      } else {
-        if (type === "like") setStatus(`Liked ${swipedName}. Keep swiping for a match.`);
-        if (type === "super_like") setStatus(`Super liked ${swipedName}. Fingers crossed.`);
-        if (type === "skip") setStatus(`Passed on ${swipedName}.`);
       }
 
       if (previousCount <= 1) {
@@ -1296,6 +1307,9 @@ export default function Home() {
         await loadDiscoverDeck(refreshedToken, { silent: true, allowRecycle: true });
       }
     } catch (swipeError) {
+      // On API failure, restore the card so the user can retry.
+      setCards((prev) => [swipedCard, ...prev]);
+      setStatus("");
       const message = swipeError instanceof Error ? swipeError.message : "";
       if (isUnauthorizedMessage(message)) {
         setError("Your session expired. Please log in again.");
@@ -1303,8 +1317,6 @@ export default function Home() {
       } else {
         setError("Your swipe did not save. Please try once more.");
       }
-    } finally {
-      setIsSwiping(false);
     }
   };
 
@@ -1938,7 +1950,7 @@ export default function Home() {
                 onLike={() => onSwipe("like")}
                 onSkip={() => onSwipe("skip")}
                 onSuperLike={() => onSwipe("super_like")}
-                isBusy={isSwiping}
+                isBusy={false}
               />
             ) : (
               <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-center shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
@@ -2026,7 +2038,7 @@ export default function Home() {
                     onLike={() => onSwipe("like")}
                     onSkip={() => onSwipe("skip")}
                     onSuperLike={() => onSwipe("super_like")}
-                    isBusy={isSwiping}
+                    isBusy={false}
                   />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-center">
