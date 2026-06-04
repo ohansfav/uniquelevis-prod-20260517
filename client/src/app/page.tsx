@@ -1866,7 +1866,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--color-bg)] pb-22 md:pb-0">
+    <div className="relative min-h-screen overflow-hidden bg-[var(--color-bg)] md:pb-0" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 100px)" }}>
             {needsOnboarding && token && profile && (
               <OnboardingFlow
                 token={token}
@@ -1941,6 +1941,12 @@ export default function Home() {
             />
             <GeneralSettings themeMode={themeMode} onChangeThemeMode={setThemeMode} />
           </section>
+
+          {/* Preload the next 2 card photos so they're ready before the user swipes */}
+          {cards.slice(1, 3).map((c) => c.photos[0]).filter(Boolean).map((url) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={url} src={url!} alt="" aria-hidden fetchPriority="low" style={{ display: "none" }} />
+          ))}
 
           <section className="mx-auto w-full space-y-3">
               <div style={{ height: 660 }}>

@@ -107,6 +107,7 @@ export default function ChatPanel({
           name="text"
           placeholder={lockReason ? "Messaging locked for this match" : "Type a message"}
           onChange={(e) => onTypingChange(e.currentTarget.value.trim().length > 0)}
+          onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300); }}
           disabled={Boolean(lockReason) || !selectedMatchId}
         />
         <button

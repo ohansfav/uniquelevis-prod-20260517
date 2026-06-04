@@ -79,6 +79,11 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
         loading="eager"
         draggable={false}
       />
+      {/* Preload the next photo in this card's gallery so tapping the nav is instant */}
+      {user.photos[photoIndex + 1] && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={getProfileImage(user.photos[photoIndex + 1], user.firstName, 560, 70)} alt="" aria-hidden fetchPriority="low" style={{ display: "none" }} draggable={false} />
+      )}
 
       {/* LIKE / NOPE swipe indicators */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-start pl-8" style={{ opacity: likeOpacity }}>
