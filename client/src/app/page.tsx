@@ -321,6 +321,29 @@ export default function Home() {
   const isAuthenticated = token.length > 0;
   const typingName = selectedMatchId ? typingByMatch[selectedMatchId] ?? null : null;
   const selectedChatLockReason = selectedMatchId ? chatLockByMatch[selectedMatchId] ?? null : null;
+
+  const mergeMessagesKeepingRecentLocal = (prev: MessageItem[], next: MessageItem[], actorId: string | null) => {
+    if (!actorId) {
+      return next;
+    }
+
+    const nextIds = new Set(next.map((item) => item.id));
+    const cutoff = Date.now() - 20_000;
+    const preserve = prev.filter((item) => {
+      if (item.senderId !== actorId || nextIds.has(item.id)) {
+        return false;
+      }
+      const created = Date.parse(item.createdAt);
+      return Number.isFinite(created) && created >= cutoff;
+    });
+
+    if (preserve.length === 0) {
+      return next;
+    }
+
+    return [...next, ...preserve].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  };
+
   const copy = landingCopy[selectedLanguage];
   const splashOverlay = (
     <div className="splash-overlay fixed inset-0 z-50 grid place-items-center bg-[#0e0c17] px-6 text-white pointer-events-none">
@@ -1061,11 +1084,17 @@ export default function Home() {
   }, [token]);
 
   useEffect(() => {
-    if (!selectedMatchId) return;
-    const exists = matches.some((match) => match.id === selectedMatchId);
-    if (exists) return;
-    setSelectedMatchId(matches[0]?.id ?? null);
-    setMessages([]);
+    if (!selectedMatchId) {
+      if (matches.length > 0) {
+        setSelectedMatchId(matches[0].id);
+      }
+      return;
+    }
+
+    if (matches.length === 0) {
+      setSelectedMatchId(null);
+      setMessages([]);
+    }
   }, [matches, selectedMatchId]);
 
   useEffect(() => {
@@ -1076,7 +1105,7 @@ export default function Home() {
       void withSessionRecovery((authToken) => getMessages(authToken, selectedMatchId))
         .then((nextMessages) => {
           clearMatchChatLock(selectedMatchId);
-          setMessages(nextMessages);
+          setMessages((prev) => mergeMessagesKeepingRecentLocal(prev, nextMessages, currentUser?.id ?? profile?.id ?? null));
         })
         .catch((pollError) => {
           const message = pollError instanceof Error ? pollError.message : "";
@@ -1089,7 +1118,7 @@ export default function Home() {
     }, 6000);
 
     return () => window.clearInterval(poller);
-  }, [token, selectedMatchId, refreshToken, selectedChatLockReason]);
+  }, [token, selectedMatchId, refreshToken, selectedChatLockReason, currentUser?.id, profile?.id]);
 
   const handleSelectMatch = async (matchId: string) => {
     if (!token) return;
@@ -1996,7 +2025,7 @@ export default function Home() {
               selectedMatchId={selectedMatchId}
               onSelectMatch={handleSelectMatch}
               messages={messages}
-              currentUserId={currentUser?.id ?? null}
+              currentUserId={currentUser?.id ?? profile?.id ?? null}
               onSend={handleSendMessage}
               isTyping={Boolean(typingName)}
               typingName={typingName}
@@ -2090,7 +2119,7 @@ export default function Home() {
                 selectedMatchId={selectedMatchId}
                 onSelectMatch={handleSelectMatch}
                 messages={messages}
-                currentUserId={currentUser?.id ?? null}
+                currentUserId={currentUser?.id ?? profile?.id ?? null}
                 onSend={handleSendMessage}
                 isTyping={Boolean(typingName)}
                 typingName={typingName}

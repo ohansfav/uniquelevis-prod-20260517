@@ -60,7 +60,7 @@ export default function ChatPanel({
                 className={`max-w-[82%] rounded-xl px-3 py-2 text-sm ${
                   msg.senderId === currentUserId
                     ? "ml-auto bg-[var(--color-primary)] text-white"
-                    : "bg-[var(--color-surface-elevated)] text-[var(--color-text)]"
+                    : "bg-[#edf0f4] text-[#1f2430]"
                 }`}
               >
                 <p>{msg.text}</p>
@@ -87,8 +87,8 @@ export default function ChatPanel({
       <form
         className="flex gap-2"
         onSubmit={async (event) => {
-          if (lockReason) return;
           event.preventDefault();
+          if (lockReason) return;
           const formData = new FormData(event.currentTarget);
           const text = String(formData.get("text") ?? "").trim();
           if (text) {

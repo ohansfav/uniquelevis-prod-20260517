@@ -26,11 +26,17 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
   const [showDetails, setShowDetails] = useState(false);
   const [activeLens, setActiveLens] = useState<Lens>("for-you");
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     setPhotoIndex(0);
     setShowDetails(false);
+    setImageFailed(false);
   }, [user.id]);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [user.id, photoIndex]);
 
   const likeOpacity = useMemo(() => (deltaX > 20 ? Math.min(1, (deltaX - 20) / 60) : 0), [deltaX]);
   const skipOpacity = useMemo(() => (deltaX < -20 ? Math.min(1, (-deltaX - 20) / 60) : 0), [deltaX]);
@@ -46,6 +52,9 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
   const tierLabel = (user.membershipTier ?? "free").toUpperCase();
   const photoCount = Math.max(1, user.photos.length);
   const currentPhoto = user.photos[photoIndex] ?? user.photos[0] ?? "";
+  const currentPhotoUrl = getProfileImage(currentPhoto, user.firstName, 560, 70);
+  const fallbackPhotoUrl = getProfileImage(undefined, user.firstName, 560, 70);
+  const photoSrc = imageFailed ? fallbackPhotoUrl : currentPhotoUrl;
   const tierClass =
     user.membershipTier === "diamond" ? "bg-cyan-100 text-cyan-900"
     : user.membershipTier === "gold" ? "bg-amber-100 text-amber-900"
@@ -73,10 +82,11 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
       {/* Background photo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getProfileImage(currentPhoto, user.firstName, 560, 70)}
+        src={photoSrc}
         alt={`${user.firstName}`}
         className="absolute inset-0 h-full w-full object-cover"
         loading="eager"
+        onError={() => setImageFailed(true)}
         draggable={false}
       />
       {/* Preload the next photo in this card's gallery so tapping the nav is instant */}
