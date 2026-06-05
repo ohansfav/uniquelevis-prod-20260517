@@ -28,18 +28,15 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
   const flutterwaveStatus = billingConfig?.providers?.flutterwave;
-  const flutterwaveReady = flutterwaveStatus ? flutterwaveStatus.checkoutConfigured : true;
+  const flutterwaveReady = billingConfig ? billingConfig.checkoutConfigured !== false : true;
 
   const unavailableReason = !flutterwaveReady
-    ? "Flutterwave checkout is currently unavailable. Please check gateway setup in admin/deployment settings."
+    ? "Flutterwave checkout is currently unavailable right now. Tap any plan to recheck the live gateway."
     : null;
 
-  const missingForProvider = flutterwaveStatus?.missing ?? [];
-
-  const canCheckout = flutterwaveReady;
+  const missingForProvider = billingConfig?.checkoutMissing ?? [];
 
   const handleUpgradeClick = (plan: PaidMembershipTier) => {
-    if (!canCheckout) return;
     onUpgrade?.(plan, "flutterwave");
   };
 
@@ -106,6 +103,9 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
           {unavailableReason && (
             <p className="mt-2 text-xs text-[#8a2445]">{unavailableReason}</p>
           )}
+          {unavailableReason && (
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Tap any plan to retry the live gateway check.</p>
+          )}
           {unavailableReason && missingForProvider.length > 0 && (
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Missing: {missingForProvider.join(", ")}</p>
           )}
@@ -115,9 +115,9 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
                 key={option.plan}
                 type="button"
                 onClick={() => handleUpgradeClick(option.plan)}
-                disabled={!canCheckout}
+                disabled={!onUpgrade}
                 className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent} ${
-                  !canCheckout ? "cursor-not-allowed opacity-55" : ""
+                  !onUpgrade ? "cursor-not-allowed opacity-55" : ""
                 }`}
               >
                 <span className="block text-sm font-bold">{option.label} • {option.price}</span>
