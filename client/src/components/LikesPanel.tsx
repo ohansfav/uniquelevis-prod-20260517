@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { BillingProvider, IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
+import CheckoutSheet, { type CheckoutPlan } from "./CheckoutSheet";
 
 type Props = {
   likesCount: number;
@@ -17,21 +18,21 @@ type Props = {
   onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => Promise<void> | void;
 };
 
-const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string; price: string }> = [
-  { plan: "platinum", label: "Platinum", price: "N500", accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you." },
-  { plan: "silver", label: "Silver", price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility with premium discover access." },
-  { plan: "gold", label: "Gold", price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Gold privacy gate and higher-tier visibility." },
-  { plan: "diamond", label: "Diamond", price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access." },
+const upgradeOptions: CheckoutPlan[] = [
+  { plan: "platinum", label: "Platinum", price: "N500",   accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you.",                features: ["See exactly who liked you", "Unlimited likes visibility", "Priority in discovery"] },
+  { plan: "silver",   label: "Silver",   price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility with premium discover access.", features: ["Likes visibility", "Premium discover access", "Send messages first"] },
+  { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Gold privacy gate and higher-tier visibility.",  features: ["All Silver perks", "Gold privacy gate", "Higher-tier matches"] },
+  { plan: "diamond",  label: "Diamond",  price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access.",             features: ["All Gold perks", "Top-tier privacy controls", "Full access to all features", "Diamond badge on profile"] },
 ];
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<CheckoutPlan | null>(null);
   const [upgradingPlan, setUpgradingPlan] = useState<PaidMembershipTier | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const cards = likes.slice(0, 4);
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
-  const flutterwaveStatus = billingConfig?.providers?.flutterwave;
   const flutterwaveReady = billingConfig ? billingConfig.checkoutConfigured !== false : true;
 
   const unavailableReason = !flutterwaveReady
@@ -51,6 +52,11 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
     } finally {
       setUpgradingPlan(null);
     }
+  };
+
+  const handlePlanTap = (option: CheckoutPlan) => {
+    setUpgradeError(null);
+    setCheckoutPlan(option);
   };
 
   return (
@@ -112,47 +118,28 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
           <p className="text-sm text-[var(--color-text)]">
             Upgrade your membership to unlock likes visibility, messaging, and premium privacy controls.
           </p>
-          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Payment Provider: Flutterwave</p>
-          {unavailableReason && (
-            <p className="mt-2 text-xs text-[#8a2445]">{unavailableReason}</p>
+          {!flutterwaveReady && (
+            <p className="mt-2 text-xs text-[#8a2445]">Flutterwave checkout is currently unavailable right now. Tap any plan to recheck the live gateway.</p>
           )}
-          {unavailableReason && (
-            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Tap any plan to retry the live gateway check.</p>
-          )}
-          {unavailableReason && missingForProvider.length > 0 && (
-            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Missing: {missingForProvider.join(", ")}</p>
+          {!flutterwaveReady && (billingConfig?.checkoutMissing ?? []).length > 0 && (
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Missing: {(billingConfig?.checkoutMissing ?? []).join(", ")}</p>
           )}
           {upgradeError && (
             <p className="mt-2 rounded-xl border border-red-300/60 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{upgradeError}</p>
           )}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {upgradeOptions.map((option) => {
-              const isLoading = upgradingPlan === option.plan;
-              const isBusy = upgradingPlan !== null;
-              return (
-                <button
-                  key={option.plan}
-                  type="button"
-                  onClick={() => void handleUpgradeClick(option.plan)}
-                  disabled={!onUpgrade || isBusy}
-                  className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold transition active:scale-95 ${option.accent} ${
-                    isBusy ? "opacity-70" : "hover:brightness-105 active:brightness-95"
-                  }`}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-1.5">
-                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/><path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"/></svg>
-                      <span className="text-sm font-bold">Opening…</span>
-                    </span>
-                  ) : (
-                    <>
-                      <span className="block text-sm font-bold">{option.label} • {option.price}</span>
-                      <span className="block opacity-80">{option.description}</span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
+            {upgradeOptions.map((option) => (
+              <button
+                key={option.plan}
+                type="button"
+                onClick={() => handlePlanTap(option)}
+                disabled={!onUpgrade}
+                className={`rounded-2xl px-3 py-3 text-left transition active:scale-95 ${option.accent} ${!onUpgrade ? "cursor-not-allowed opacity-55" : "hover:brightness-105"}`}
+              >
+                <span className="block text-sm font-bold">{option.label} • {option.price}</span>
+                <span className="block text-[11px] opacity-80 mt-0.5">{option.description}</span>
+              </button>
+            ))}
           </div>
           <button
             type="button"
@@ -162,6 +149,32 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
             Dismiss
           </button>
         </div>
+      )}
+
+      {/* Checkout sheet (slides up from bottom) */}
+      {checkoutPlan && (
+        <CheckoutSheet
+          plan={checkoutPlan}
+          isLoading={upgradingPlan === checkoutPlan.plan}
+          error={upgradeError}
+          onConfirm={async (plan, provider) => {
+            setUpgradingPlan(plan);
+            setUpgradeError(null);
+            try {
+              await onUpgrade?.(plan, provider);
+            } catch (err) {
+              setUpgradeError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+            } finally {
+              setUpgradingPlan(null);
+            }
+          }}
+          onClose={() => {
+            if (!upgradingPlan) {
+              setCheckoutPlan(null);
+              setUpgradeError(null);
+            }
+          }}
+        />
       )}
 
       {likesUnlocked && likesCount === 0 && (
