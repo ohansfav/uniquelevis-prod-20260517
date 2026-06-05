@@ -59,8 +59,8 @@ export default function ChatPanel({
                 key={msg.id}
                 className={`max-w-[82%] rounded-xl px-3 py-2 text-sm ${
                   msg.senderId === currentUserId
-                    ? "ml-auto bg-[var(--color-primary)] text-white"
-                    : "bg-[#edf0f4] text-[#1f2430]"
+                    ? "ml-auto bg-[var(--color-accent)] text-white"
+                    : "bg-[var(--color-border)] text-[var(--color-text)]"
                 }`}
               >
                 <p>{msg.text}</p>

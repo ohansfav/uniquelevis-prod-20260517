@@ -8,11 +8,13 @@ type Props = {
   likesUnlocked: boolean;
   membershipTier?: MembershipTier;
   billingConfig?: {
+    checkoutConfigured?: boolean;
+    checkoutMissing?: string[];
     providers?: {
       flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
   } | null;
-  onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => void;
+  onUpgrade?: (plan: PaidMembershipTier, provider?: BillingProvider) => Promise<void> | void;
 };
 
 const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: string; description: string; price: string }> = [
@@ -24,6 +26,8 @@ const upgradeOptions: Array<{ plan: PaidMembershipTier; label: string; accent: s
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradingPlan, setUpgradingPlan] = useState<PaidMembershipTier | null>(null);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const cards = likes.slice(0, 4);
   const cardSlots: Array<IncomingLikeItem | null> = cards.length > 0 ? cards : [null, null, null, null];
   const tierLabel = (membershipTier ?? "free").toUpperCase();
@@ -36,8 +40,17 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
 
   const missingForProvider = billingConfig?.checkoutMissing ?? [];
 
-  const handleUpgradeClick = (plan: PaidMembershipTier) => {
-    onUpgrade?.(plan, "flutterwave");
+  const handleUpgradeClick = async (plan: PaidMembershipTier) => {
+    if (upgradingPlan) return;
+    setUpgradingPlan(plan);
+    setUpgradeError(null);
+    try {
+      await onUpgrade?.(plan, "flutterwave");
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+    } finally {
+      setUpgradingPlan(null);
+    }
   };
 
   return (
@@ -109,21 +122,37 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
           {unavailableReason && missingForProvider.length > 0 && (
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">Missing: {missingForProvider.join(", ")}</p>
           )}
+          {upgradeError && (
+            <p className="mt-2 rounded-xl border border-red-300/60 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{upgradeError}</p>
+          )}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {upgradeOptions.map((option) => (
-              <button
-                key={option.plan}
-                type="button"
-                onClick={() => handleUpgradeClick(option.plan)}
-                disabled={!onUpgrade}
-                className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold ${option.accent} ${
-                  !onUpgrade ? "cursor-not-allowed opacity-55" : ""
-                }`}
-              >
-                <span className="block text-sm font-bold">{option.label} • {option.price}</span>
-                <span className="block opacity-80">{option.description}</span>
-              </button>
-            ))}
+            {upgradeOptions.map((option) => {
+              const isLoading = upgradingPlan === option.plan;
+              const isBusy = upgradingPlan !== null;
+              return (
+                <button
+                  key={option.plan}
+                  type="button"
+                  onClick={() => void handleUpgradeClick(option.plan)}
+                  disabled={!onUpgrade || isBusy}
+                  className={`rounded-2xl px-3 py-2 text-left text-[11px] font-semibold transition active:scale-95 ${option.accent} ${
+                    isBusy ? "opacity-70" : "hover:brightness-105 active:brightness-95"
+                  }`}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-1.5">
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/><path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"/></svg>
+                      <span className="text-sm font-bold">Opening…</span>
+                    </span>
+                  ) : (
+                    <>
+                      <span className="block text-sm font-bold">{option.label} • {option.price}</span>
+                      <span className="block opacity-80">{option.description}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"

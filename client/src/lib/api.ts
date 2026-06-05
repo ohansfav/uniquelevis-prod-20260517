@@ -48,6 +48,8 @@ const readErrorMessage = async (res: Response, fallback: string) => {
   const details = await readResponseDetails(res);
 
   if (res.status >= 500) {
+    // Prefer the server's own error message (e.g. Flutterwave passthrough errors on 502)
+    if (details) return details;
     return `${fallback}. We hit a temporary server issue. Please try again in a moment.`;
   }
 
