@@ -19,7 +19,6 @@ import {
   createUpgradeCheckout,
   getDiscoverCards,
   getBillingConfig,
-  getHumanCheckChallenge,
   getIncomingLikes,
   getMatches,
   getMessages,
@@ -301,9 +300,6 @@ export default function Home() {
   const [selectedLanguage, setSelectedLanguage] = useState<LandingLanguage>("English");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [humanPrompt, setHumanPrompt] = useState("");
-  const [humanChallengeId, setHumanChallengeId] = useState("");
-  const [humanAnswer, setHumanAnswer] = useState("");
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
   const streamRecoveryInFlightRef = useRef(false);
   const streamFailureCountRef = useRef(0);
@@ -456,10 +452,6 @@ export default function Home() {
     localStorage.removeItem("ul_access_token");
     localStorage.removeItem("ul_refresh_token");
     localStorage.removeItem("ul_app_state");
-
-  setHumanChallengeId("");
-  setHumanPrompt("");
-  setHumanAnswer("");
 
   if (options?.authMode) {
       setAuthMode(options.authMode);
@@ -767,36 +759,6 @@ export default function Home() {
   }, [authReady, mobileTab, selectedMatchId, swipeFilters, swipeOption]);
 
   useEffect(() => {
-    if (authMode !== "login" || !showAuthForm) return;
-    let mounted = true;
-    let retries = 0;
-    const fetchChallenge = () => {
-      void getHumanCheckChallenge()
-        .then((challenge) => {
-          if (!mounted) return;
-          setHumanPrompt(challenge.prompt);
-          setHumanChallengeId(challenge.challengeId);
-          setHumanAnswer("");
-        })
-        .catch(() => {
-          if (!mounted) return;
-          if (retries < 3) {
-            retries++;
-            window.setTimeout(fetchChallenge, 1500 * retries);
-          } else {
-            setHumanPrompt("5 + 3 = ?");
-            setHumanChallengeId("");
-          }
-        });
-    };
-    fetchChallenge();
-
-    return () => {
-      mounted = false;
-    };
-  }, [authMode, showAuthForm]);
-
-  useEffect(() => {
     if (token) {
       localStorage.setItem("ul_access_token", token);
     } else {
@@ -921,8 +883,6 @@ export default function Home() {
 
     const normalizedEmail = email.normalize("NFKC").trim().toLowerCase();
     const normalizedPassword = password.normalize("NFKC");
-    const normalizedHumanAnswer = humanAnswer.normalize("NFKC").trim();
-
     if (!normalizedEmail) {
       setError("Please enter your email address.");
       setLoading(false);
@@ -935,26 +895,10 @@ export default function Home() {
       return;
     }
 
-    if (authMode === "login") {
-      if (!humanChallengeId) {
-        setError("Human verification is still loading. Please wait a moment and try again.");
-        setLoading(false);
-        return;
-      }
-      if (!normalizedHumanAnswer) {
-        setError("Please solve the human verification challenge before logging in.");
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
       const auth =
         authMode === "login"
-          ? await login(normalizedEmail, normalizedPassword, {
-              challengeId: humanChallengeId,
-              challengeAnswer: normalizedHumanAnswer,
-            })
+          ? await login(normalizedEmail, normalizedPassword)
           : await signup({
               email: normalizedEmail,
               password: normalizedPassword,
@@ -995,18 +939,6 @@ export default function Home() {
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "We could not sign you in right now. Please check your details and try again.";
       setError(message);
-      if (authMode === "login") {
-        void getHumanCheckChallenge()
-          .then((challenge) => {
-            setHumanPrompt(challenge.prompt);
-            setHumanChallengeId(challenge.challengeId);
-            setHumanAnswer("");
-          })
-          .catch(() => {
-            setHumanPrompt("5 + 3 = ?");
-            setHumanChallengeId("");
-          });
-      }
     } finally {
       setLoading(false);
     }
@@ -1811,21 +1743,6 @@ export default function Home() {
                   </button>
                 </div>
               </label>
-              {authMode === "login" && (
-                <label className="space-y-1 md:col-span-2">
-                  <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#2a2347]">Human Verification</span>
-                  <div className="rounded-xl border border-[#d9dce4] bg-white px-3 py-2 text-sm font-semibold text-[#2a2347]">
-                    Solve: {humanPrompt || "Loading challenge..."}
-                  </div>
-                  <input
-                    className="input"
-                    value={humanAnswer}
-                    onChange={(e) => setHumanAnswer(e.target.value)}
-                    placeholder="Type the answer"
-                    inputMode="numeric"
-                  />
-                </label>
-              )}
               {authMode === "signup" && (
                 <>
                   <label className="space-y-1">

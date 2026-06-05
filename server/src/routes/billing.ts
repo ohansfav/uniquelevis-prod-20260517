@@ -63,7 +63,9 @@ const flutterwaveWebhookSchema = z.object({
     .passthrough(),
 });
 
-const isFlutterwaveConfigured = () => Boolean(env.FLUTTERWAVE_SECRET_KEY);
+const resolveFlutterwaveSecret = () => env.FLUTTERWAVE_SECRET_KEY || env.FLUTTERWAVE_CLIENT_SECRET;
+
+const isFlutterwaveConfigured = () => Boolean(resolveFlutterwaveSecret());
 
 const resolveActiveProvider = (): PaymentProvider => "flutterwave";
 
@@ -202,10 +204,16 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
   };
 
   try {
+    const flutterwaveSecret = resolveFlutterwaveSecret();
+    if (!flutterwaveSecret) {
+      res.status(501).json({ message: "Flutterwave is not configured" });
+      return;
+    }
+
     const response = await fetch(`${flutterwaveApiBase()}/v3/payments`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.FLUTTERWAVE_SECRET_KEY}`,
+        Authorization: `Bearer ${flutterwaveSecret}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
@@ -249,7 +257,8 @@ billingRouter.get("/billing/config", (_req, res) => {
   };
 
   const checkoutMissing: string[] = [];
-  if (!env.FLUTTERWAVE_SECRET_KEY) checkoutMissing.push("FLUTTERWAVE_SECRET_KEY");
+  const flutterwaveSecret = resolveFlutterwaveSecret();
+  if (!flutterwaveSecret) checkoutMissing.push("FLUTTERWAVE_SECRET_KEY|FLUTTERWAVE_CLIENT_SECRET");
   if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) checkoutMissing.push("BILLING_AMOUNT_PLATINUM");
   if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) checkoutMissing.push("BILLING_AMOUNT_SILVER");
   if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) checkoutMissing.push("BILLING_AMOUNT_GOLD");
@@ -258,6 +267,7 @@ billingRouter.get("/billing/config", (_req, res) => {
   const optionalMissing: string[] = [];
   if (!env.FLUTTERWAVE_WEBHOOK_SECRET_HASH) optionalMissing.push("FLUTTERWAVE_WEBHOOK_SECRET_HASH");
   if (!env.FLUTTERWAVE_PUBLIC_KEY) optionalMissing.push("FLUTTERWAVE_PUBLIC_KEY");
+  if (!env.FLUTTERWAVE_CLIENT_ID) optionalMissing.push("FLUTTERWAVE_CLIENT_ID");
   if (!env.FLUTTERWAVE_ENCRYPTION_KEY) optionalMissing.push("FLUTTERWAVE_ENCRYPTION_KEY");
 
   res.json({
@@ -326,7 +336,8 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
     return;
   }
 
-  if (!env.FLUTTERWAVE_SECRET_KEY) {
+  const flutterwaveSecret = resolveFlutterwaveSecret();
+  if (!flutterwaveSecret) {
     res.status(501).json({ message: "Flutterwave secret key is not configured" });
     return;
   }
@@ -337,7 +348,7 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
       {
       method: "GET",
       headers: {
-          Authorization: `Bearer ${env.FLUTTERWAVE_SECRET_KEY}`,
+          Authorization: `Bearer ${flutterwaveSecret}`,
       },
       },
     );
