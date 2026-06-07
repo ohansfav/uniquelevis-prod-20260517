@@ -63,9 +63,71 @@ const flutterwaveWebhookSchema = z.object({
     .passthrough(),
 });
 
-const resolveFlutterwaveSecret = () => env.FLUTTERWAVE_SECRET_KEY || env.FLUTTERWAVE_CLIENT_SECRET;
+type FlutterwaveTokenCache = {
+  accessToken: string;
+  expiresAt: number;
+};
 
-const isFlutterwaveConfigured = () => Boolean(resolveFlutterwaveSecret());
+let flutterwaveTokenCache: FlutterwaveTokenCache | null = null;
+
+const resolveFlutterwaveSecret = () => env.FLUTTERWAVE_SECRET_KEY.trim();
+
+const hasFlutterwaveOAuthCredentials = () => Boolean(env.FLUTTERWAVE_CLIENT_ID.trim() && env.FLUTTERWAVE_CLIENT_SECRET.trim());
+
+const isFlutterwaveConfigured = () => Boolean(resolveFlutterwaveSecret()) || hasFlutterwaveOAuthCredentials();
+
+const resolveFlutterwaveAccessToken = async () => {
+  const secret = resolveFlutterwaveSecret();
+  if (secret) {
+    return secret;
+  }
+
+  if (!hasFlutterwaveOAuthCredentials()) {
+    return "";
+  }
+
+  const now = Date.now();
+  if (flutterwaveTokenCache && flutterwaveTokenCache.expiresAt > now + 60_000) {
+    return flutterwaveTokenCache.accessToken;
+  }
+
+  const tokenBody = new URLSearchParams({
+    client_id: env.FLUTTERWAVE_CLIENT_ID.trim(),
+    client_secret: env.FLUTTERWAVE_CLIENT_SECRET.trim(),
+    grant_type: "client_credentials",
+  });
+
+  const tokenResponse = await fetch(env.FLUTTERWAVE_OAUTH_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: tokenBody.toString(),
+  });
+
+  if (!tokenResponse.ok) {
+    const responseText = await tokenResponse.text().catch(() => "");
+    throw new Error(`OAuth token request failed: ${responseText || tokenResponse.statusText}`);
+  }
+
+  const tokenPayload = (await tokenResponse.json()) as {
+    access_token?: string;
+    expires_in?: number;
+  };
+
+  const accessToken = tokenPayload.access_token?.trim();
+  if (!accessToken) {
+    throw new Error("OAuth token response missing access_token");
+  }
+
+  const expiresInMs = Math.max(tokenPayload.expires_in ?? 600, 60) * 1000;
+  flutterwaveTokenCache = {
+    accessToken,
+    expiresAt: now + expiresInMs,
+  };
+
+  return accessToken;
+};
 
 const resolveActiveProvider = (): PaymentProvider => "flutterwave";
 
@@ -204,8 +266,8 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
   };
 
   try {
-    const flutterwaveSecret = resolveFlutterwaveSecret();
-    if (!flutterwaveSecret) {
+    const flutterwaveAccessToken = await resolveFlutterwaveAccessToken();
+    if (!flutterwaveAccessToken) {
       res.status(501).json({ message: "Flutterwave is not configured" });
       return;
     }
@@ -213,7 +275,7 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
     const response = await fetch(`${flutterwaveApiBase()}/v3/payments`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${flutterwaveSecret}`,
+        Authorization: `Bearer ${flutterwaveAccessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
@@ -258,7 +320,9 @@ billingRouter.get("/billing/config", (_req, res) => {
 
   const checkoutMissing: string[] = [];
   const flutterwaveSecret = resolveFlutterwaveSecret();
-  if (!flutterwaveSecret) checkoutMissing.push("FLUTTERWAVE_SECRET_KEY|FLUTTERWAVE_CLIENT_SECRET");
+  if (!flutterwaveSecret && !hasFlutterwaveOAuthCredentials()) {
+    checkoutMissing.push("FLUTTERWAVE_SECRET_KEY or (FLUTTERWAVE_CLIENT_ID + FLUTTERWAVE_CLIENT_SECRET)");
+  }
   if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) checkoutMissing.push("BILLING_AMOUNT_PLATINUM");
   if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) checkoutMissing.push("BILLING_AMOUNT_SILVER");
   if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) checkoutMissing.push("BILLING_AMOUNT_GOLD");
@@ -336,19 +400,19 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
     return;
   }
 
-  const flutterwaveSecret = resolveFlutterwaveSecret();
-  if (!flutterwaveSecret) {
-    res.status(501).json({ message: "Flutterwave secret key is not configured" });
-    return;
-  }
-
   try {
+    const flutterwaveAccessToken = await resolveFlutterwaveAccessToken();
+    if (!flutterwaveAccessToken) {
+      res.status(501).json({ message: "Flutterwave is not configured" });
+      return;
+    }
+
     const response = await fetch(
       `${flutterwaveApiBase()}/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(parsed.data.reference)}`,
       {
       method: "GET",
       headers: {
-          Authorization: `Bearer ${flutterwaveSecret}`,
+          Authorization: `Bearer ${flutterwaveAccessToken}`,
       },
       },
     );

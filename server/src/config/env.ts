@@ -35,6 +35,9 @@ const env = {
   FLUTTERWAVE_ENCRYPTION_KEY: process.env.FLUTTERWAVE_ENCRYPTION_KEY ?? "",
   FLUTTERWAVE_WEBHOOK_SECRET_HASH: process.env.FLUTTERWAVE_WEBHOOK_SECRET_HASH ?? "",
   FLUTTERWAVE_API_BASE: process.env.FLUTTERWAVE_API_BASE ?? "https://api.flutterwave.com",
+  FLUTTERWAVE_OAUTH_TOKEN_URL:
+    process.env.FLUTTERWAVE_OAUTH_TOKEN_URL
+    ?? "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token",
   FLUTTERWAVE_PAYMENT_OPTIONS: process.env.FLUTTERWAVE_PAYMENT_OPTIONS ?? "",
   BILLING_CURRENCY: process.env.BILLING_CURRENCY ?? "NGN",
   BILLING_AMOUNT_PLATINUM: Number(process.env.BILLING_AMOUNT_PLATINUM ?? 50000),
