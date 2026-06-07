@@ -305,8 +305,9 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
       sessionId: reference,
       reference,
     });
-  } catch {
-    res.status(502).json({ message: "Unable to connect to Flutterwave" });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : "Unknown checkout error";
+    res.status(502).json({ message: `Flutterwave checkout creation failed: ${details}` });
   }
 });
 
@@ -487,8 +488,9 @@ billingRouter.post("/billing/verify-checkout", requireAuth, async (req, res) => 
     markPaymentReferenceProcessed(parsed.data.reference, userId, plan);
 
     res.json({ ok: true, provider, tier: plan, reference: parsed.data.reference });
-  } catch {
-    res.status(502).json({ message: "Unable to verify payment with Flutterwave" });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : "Unknown verification error";
+    res.status(502).json({ message: `Unable to verify payment with Flutterwave: ${details}` });
   }
 });
 
