@@ -1156,11 +1156,23 @@ export default function Home() {
   const handleUpgrade = async (plan: PaidMembershipTier, selectedProvider?: BillingProvider) => {
     if (!token) return;
 
-    try {
-      const config = await getBillingConfig();
-      setBillingConfig(config);
+    let checkoutWindow: Window | null = null;
 
-      if (!config.checkoutConfigured) {
+    try {
+      // Open a browser window early so mobile browsers don't block the payment redirect.
+      checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
+      if (checkoutWindow) {
+        checkoutWindow.document.title = "Opening secure checkout...";
+        checkoutWindow.document.body.innerHTML = "<p style='font-family:system-ui;padding:20px'>Opening secure checkout...</p>";
+      }
+
+      const config = billingConfig;
+
+      if (config && !config.checkoutConfigured) {
+        if (checkoutWindow) {
+          checkoutWindow.close();
+          checkoutWindow = null;
+        }
         const missing = config.checkoutMissing?.length ? ` Missing: ${config.checkoutMissing.join(", ")}.` : "";
         setError(`Checkout is not configured on the server.${missing}`);
         return;
@@ -1170,16 +1182,31 @@ export default function Home() {
       if (selectedProvider === "flutterwave") {
         provider = selectedProvider;
       } else {
-        provider = config.provider;
+        provider = config?.provider;
       }
 
       const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan, provider));
       if (checkout.checkoutUrl) {
-        window.location.href = checkout.checkoutUrl;
+        if (checkoutWindow && !checkoutWindow.closed) {
+          checkoutWindow.location.href = checkout.checkoutUrl;
+          checkoutWindow.focus();
+        } else {
+          window.location.href = checkout.checkoutUrl;
+        }
         return;
       }
+
+      if (checkoutWindow) {
+        checkoutWindow.close();
+        checkoutWindow = null;
+      }
+
       setStatus("Checkout created, but no redirect URL returned.");
     } catch (upgradeError) {
+      if (checkoutWindow) {
+        checkoutWindow.close();
+        checkoutWindow = null;
+      }
       const message = upgradeError instanceof Error ? upgradeError.message : "Unable to start upgrade checkout right now.";
       setError(message);
     }

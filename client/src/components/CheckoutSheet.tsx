@@ -21,21 +21,20 @@ export default function CheckoutSheet({ plan, isLoading, error, onConfirm, onClo
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-[90] flex items-end justify-center"
       onClick={() => { if (!isLoading) onClose(); }}
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Sheet */}
       <div
-        className="relative w-full max-w-lg animate-slide-up rounded-t-3xl bg-[var(--color-surface-elevated)] shadow-[0_-24px_60px_rgba(0,0,0,0.45)]"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 24px)" }}
+        className="relative flex max-h-[90dvh] w-full max-w-lg animate-slide-up flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface-elevated)] shadow-[0_-24px_60px_rgba(0,0,0,0.45)] md:max-h-[88vh] md:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}
         <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[var(--color-border)]" />
 
-        <div className="px-6 pt-4 pb-2">
+        <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
@@ -73,17 +72,21 @@ export default function CheckoutSheet({ plan, isLoading, error, onConfirm, onClo
 
           {/* Error */}
           {error && (
-            <div className="mt-4 rounded-xl border border-red-300/50 bg-red-50/80 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
+            <div className="mt-4 rounded-xl border border-red-300/50 bg-red-50/90 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
               {error}
             </div>
           )}
+        </div>
 
-          {/* Pay button */}
+        <div
+          className="border-t border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated)_92%,black_8%)] px-6 pt-3"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 96px)" }}
+        >
           <button
             type="button"
             disabled={isLoading}
             onClick={() => void onConfirm(plan.plan, "flutterwave")}
-            className="mt-5 w-full rounded-2xl romance-gradient py-4 text-base font-bold text-white shadow-[0_10px_28px_rgba(255,79,122,0.4)] transition active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-2xl romance-gradient py-4 text-base font-bold text-white shadow-[0_10px_28px_rgba(255,79,122,0.4)] transition active:scale-[0.98] disabled:opacity-60"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">

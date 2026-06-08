@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { BillingProvider, IncomingLikeItem, MembershipTier, PaidMembershipTier } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
 import CheckoutSheet, { type CheckoutPlan } from "./CheckoutSheet";
@@ -11,6 +11,12 @@ type Props = {
   billingConfig?: {
     checkoutConfigured?: boolean;
     checkoutMissing?: string[];
+    planAmounts?: {
+      platinum: number;
+      silver: number;
+      gold: number;
+      diamond: number;
+    };
     providers?: {
       flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
@@ -24,6 +30,8 @@ const upgradeOptions: CheckoutPlan[] = [
   { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Gold privacy gate and higher-tier visibility.",  features: ["All Silver perks", "Gold privacy gate", "Higher-tier matches"] },
   { plan: "diamond",  label: "Diamond",  price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access.",             features: ["All Gold perks", "Top-tier privacy controls", "Full access to all features", "Diamond badge on profile"] },
 ];
+
+const formatNaira = (amount: number) => `N${amount.toLocaleString("en-NG")}`;
 
 export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -40,6 +48,22 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
     : null;
 
   const missingForProvider = billingConfig?.checkoutMissing ?? [];
+
+  const resolvedUpgradeOptions = useMemo(() => {
+    const amounts = billingConfig?.planAmounts;
+    if (!amounts) return upgradeOptions;
+
+    return upgradeOptions.map((option) => {
+      const amount = amounts[option.plan];
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return option;
+      }
+      return {
+        ...option,
+        price: formatNaira(amount),
+      };
+    });
+  }, [billingConfig?.planAmounts]);
 
   const handleUpgradeClick = async (plan: PaidMembershipTier) => {
     if (upgradingPlan) return;
@@ -128,7 +152,7 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
             <p className="mt-2 rounded-xl border border-red-300/60 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{upgradeError}</p>
           )}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {upgradeOptions.map((option) => (
+            {resolvedUpgradeOptions.map((option) => (
               <button
                 key={option.plan}
                 type="button"
