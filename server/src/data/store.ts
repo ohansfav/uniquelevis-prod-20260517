@@ -856,3 +856,52 @@ export const revokeUserRefreshSessions = (userId: string) => {
   }
   return removed;
 };
+
+export const deleteUserCascade = (userId: string) => {
+  const userIndex = users.findIndex((u) => u.id === userId);
+  if (userIndex < 0) {
+    return { ok: false as const, message: "User not found" };
+  }
+
+  const user = users[userIndex];
+  if (user?.isAdmin) {
+    return { ok: false as const, message: "Cannot delete admin user" };
+  }
+
+  users.splice(userIndex, 1);
+
+  for (let index = likes.length - 1; index >= 0; index -= 1) {
+    const like = likes[index];
+    if (like?.byUserId === userId || like?.targetUserId === userId) {
+      likes.splice(index, 1);
+    }
+  }
+
+  for (let index = matches.length - 1; index >= 0; index -= 1) {
+    const match = matches[index];
+    if (match?.userA === userId || match?.userB === userId) {
+      matches.splice(index, 1);
+    }
+  }
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.senderId === userId) {
+      messages.splice(index, 1);
+      continue;
+    }
+    const match = matches.find((m) => m.id === message?.matchId);
+    if (!match) {
+      messages.splice(index, 1);
+    }
+  }
+
+  for (let index = refreshSessions.length - 1; index >= 0; index -= 1) {
+    if (refreshSessions[index]?.userId === userId) {
+      refreshSessions.splice(index, 1);
+    }
+  }
+
+  writeSnapshot();
+  return { ok: true as const, message: "User and related records removed" };
+};
