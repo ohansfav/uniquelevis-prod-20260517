@@ -752,3 +752,19 @@ export const revokeRefreshSession = (refreshToken) => {
         writeSnapshot();
     }
 };
+export const revokeUserRefreshSessions = (userId) => {
+    const before = refreshSessions.length;
+    if (!before) {
+        return 0;
+    }
+    for (let index = refreshSessions.length - 1; index >= 0; index -= 1) {
+        if (refreshSessions[index]?.userId === userId) {
+            refreshSessions.splice(index, 1);
+        }
+    }
+    const removed = before - refreshSessions.length;
+    if (removed > 0) {
+        writeSnapshot();
+    }
+    return removed;
+};

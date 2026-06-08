@@ -112,5 +112,5 @@ adminRouter.post("/admin/billing/test-upgrade", requireAdmin, async (req, res) =
         return;
     }
     await flushStorePersistence();
-    res.json({ ok: true, userId: parsed.data.userId, tier: parsed.data.tier, mode: "simulated-paystack-webhook" });
+    res.json({ ok: true, userId: parsed.data.userId, tier: parsed.data.tier, mode: "simulated-flutterwave-webhook" });
 });

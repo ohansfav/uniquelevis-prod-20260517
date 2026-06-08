@@ -2,7 +2,7 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { addRefreshSession, canEnforceRefreshSessions, createUser, ensureSessionUser, findUserByEmail, findUserById, flushStorePersistence, hasRefreshSession, publicUser, reloadStorePersistence, revokeRefreshSession, } from "../data/store.js";
+import { addRefreshSession, canEnforceRefreshSessions, createUser, ensureSessionUser, findUserByEmail, findUserById, flushStorePersistence, hasRefreshSession, publicUser, reloadStorePersistence, revokeRefreshSession, revokeUserRefreshSessions, } from "../data/store.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { requireAuth } from "../middleware/auth.js";
 export const authRouter = Router();
@@ -14,9 +14,7 @@ const toSessionProfile = (user) => {
         firstName: user.firstName,
         age: user.age,
         city: user.city,
-        bio: user.bio,
-        interests: user.interests,
-        photos: user.photos,
+        // Keep JWT payload lean to avoid oversized Authorization headers.
         datingIntent: user.datingIntent,
         membershipTier: user.membershipTier,
         verified: user.verified,
@@ -139,8 +137,8 @@ authRouter.post("/auth/signup", async (req, res) => {
 const loginSchema = z.object({
     email: z.string().email(),
     password: z.string().min(1),
-    challengeId: z.string().min(1),
-    challengeAnswer: z.string().min(1),
+    challengeId: z.string().trim().min(1).optional(),
+    challengeAnswer: z.string().trim().min(1).optional(),
 });
 authRouter.post("/auth/login", async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
@@ -161,18 +159,27 @@ authRouter.post("/auth/login", async (req, res) => {
         res.status(429).json({ message: `Too many login attempts. Try again in ${retryAfterSeconds} seconds.` });
         return;
     }
-    cleanupHumanChallenges(now);
-    const challenge = humanChallenges.get(parsed.data.challengeId);
-    if (!challenge || challenge.expiresAt <= now) {
-        res.status(403).json({ message: "Human verification expired. Please solve a new challenge." });
-        return;
+    const challengeId = parsed.data.challengeId?.trim() ?? "";
+    const challengeAnswer = parsed.data.challengeAnswer?.trim() ?? "";
+    const hasChallengePayload = Boolean(challengeId || challengeAnswer);
+    if (hasChallengePayload) {
+        if (!challengeId || !challengeAnswer) {
+            res.status(403).json({ message: "Human verification is incomplete. Please try again." });
+            return;
+        }
+        cleanupHumanChallenges(now);
+        const challenge = humanChallenges.get(challengeId);
+        if (!challenge || challenge.expiresAt <= now) {
+            res.status(403).json({ message: "Human verification expired. Please solve a new challenge." });
+            return;
+        }
+        if (challenge.answer !== challengeAnswer) {
+            humanChallenges.delete(challengeId);
+            res.status(403).json({ message: "Human verification failed. Please try again." });
+            return;
+        }
+        humanChallenges.delete(challengeId);
     }
-    if (challenge.answer !== parsed.data.challengeAnswer.trim()) {
-        humanChallenges.delete(parsed.data.challengeId);
-        res.status(403).json({ message: "Human verification failed. Please try again." });
-        return;
-    }
-    humanChallenges.delete(parsed.data.challengeId);
     const user = findUserByEmail(normalizedEmail);
     if (!user) {
         registerFailedAttempt(attemptKey, now);
@@ -201,8 +208,12 @@ authRouter.post("/auth/login", async (req, res) => {
         refreshToken,
     });
 });
+const adminLoginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(1),
+});
 authRouter.post("/auth/admin/login", async (req, res) => {
-    const parsed = loginSchema.safeParse(req.body);
+    const parsed = adminLoginSchema.safeParse(req.body);
     if (!parsed.success) {
         res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
         return;
@@ -263,11 +274,12 @@ authRouter.post("/auth/refresh", async (req, res) => {
     }
 });
 authRouter.post("/auth/logout", requireAuth, async (req, res) => {
+    await reloadStorePersistence();
+    revokeUserRefreshSessions(req.authUserId);
     const parsed = refreshSchema.safeParse(req.body);
     if (parsed.success) {
-        await reloadStorePersistence();
         revokeRefreshSession(parsed.data.refreshToken);
-        await flushStorePersistence();
     }
+    await flushStorePersistence();
     res.json({ ok: true });
 });
