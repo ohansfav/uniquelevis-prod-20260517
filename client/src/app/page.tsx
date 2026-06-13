@@ -107,6 +107,103 @@ const getAuthErrorContent = (message: string, mode: AuthMode) => {
     description: normalizedMessage || "We could not complete this request right now. Please try again shortly.",
     tone: "danger" as const,
   };
+
+  const processGoogleCredential = async (idToken: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const auth = await googleLogin(idToken.trim());
+
+      setCards([]);
+      setIncomingLikes([]);
+      setLikesCount(0);
+      setLikesUnlocked(false);
+      setMatches([]);
+      setMessages([]);
+      setChatLockByMatch({});
+      setTypingByMatch({});
+      setSelectedMatchId(null);
+      setProfile(null);
+      setNeedsOnboarding(false);
+      setBillingConfig(null);
+      setHasBootstrapped(false);
+      localStorage.removeItem("ul_app_state");
+
+      setToken(auth.accessToken);
+      setRefreshToken(auth.refreshToken);
+      setCurrentUser(auth.user);
+      setShowAuthForm(false);
+      localStorage.setItem("ul_access_token", auth.accessToken);
+      localStorage.setItem("ul_refresh_token", auth.refreshToken);
+      setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
+      await bootstrapData(auth.accessToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize Google Identity Services and render buttons into the
+  // containers above when `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is present.
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    const initGSI = () => {
+      const g = (window as any).google;
+      if (!g?.accounts?.id) return;
+
+      g.accounts.id.initialize({
+        client_id: clientId,
+        callback: (resp: any) => {
+          if (resp?.credential) void processGoogleCredential(resp.credential);
+        },
+      });
+
+      const renderIfPresent = (id: string, options?: any) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = "";
+        g.accounts.id.renderButton(el, options || { theme: "outline", size: "large" });
+      };
+
+      renderIfPresent("google-btn-auth", { theme: "outline", size: "large" });
+      renderIfPresent("google-btn-landing", { theme: "outline", size: "large" });
+      // Show One Tap prompt (if browser allows)
+      try {
+        g.accounts.id.prompt();
+      } catch (e) {
+        // ignore prompt errors
+      }
+    };
+
+    if (!document.getElementById("gsi-client-script")) {
+      const s = document.createElement("script");
+      s.id = "gsi-client-script";
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true;
+      s.defer = true;
+      s.onload = initGSI;
+      document.head.appendChild(s);
+    } else {
+      initGSI();
+    }
+    // If no client id is configured, render a disabled styled fallback button
+    if (!clientId) {
+      const renderFallback = (id: string) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = `
+          <button disabled class="google-fallback inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-white opacity-80">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
+            Sign in with Google (configure client)
+          </button>
+        `;
+      };
+      renderFallback("google-btn-auth");
+      renderFallback("google-btn-landing");
+    }
+  }, []);
 };
 
 const landingCopy: Record<
@@ -1873,13 +1970,24 @@ export default function Home() {
               {loading ? "Please wait..." : authMode === "login" ? "Enter" : "Create Account"}
             </button>
 
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="mt-3 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-primary)]"
-            >
-              Sign in with Google (scaffold)
-            </button>
+            <div className="mt-3 flex items-center gap-3">
+              <div id="google-btn-auth" className="hidden" />
+              <button
+                type="button"
+                onClick={() => {
+                  const g = (window as any).google;
+                  if (g?.accounts?.id) {
+                    try { g.accounts.id.prompt(); } catch { /* ignore */ }
+                  } else {
+                    void handleGoogleSignIn();
+                  }
+                }}
+                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-white hover:brightness-95"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
+                Sign in with Google
+              </button>
+            </div>
 
             {authErrorContent && (
               <div className="auth-alert mt-4" data-tone={authErrorContent.tone} role="alert" aria-live="polite">
@@ -1954,26 +2062,33 @@ export default function Home() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">Discover</p>
             <h2 className="text-xl text-[var(--color-primary)] md:text-2xl">Swipe, Explore, Match</h2>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-[var(--color-accent)]"
-          >
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-[var(--color-accent)]"
+            >
+              Refresh
+            </button>
+            <div className="mt-3 sm:mt-0 sm:ml-3 sm:w-auto flex items-center">
+              <div id="google-btn-landing" className="hidden" />
+              <button
+                type="button"
+                onClick={() => {
+                  const g = (window as any).google;
+                  if (g?.accounts?.id) {
+                    try { g.accounts.id.prompt(); } catch { /* ignore */ }
+                  } else {
+                    void beginLandingTransition(() => handleGoogleSignIn());
+                  }
+                }}
+                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-white hover:brightness-95"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
+                Sign in with Google
+              </button>
+            </div>
+          </div>
         </section>
-
-        <div className="hidden gap-5 md:grid md:grid-cols-[320px_minmax(360px,460px)_1fr] md:items-start md:justify-center">
-          <section className="space-y-4">
-            <ProfileInsights profile={profile} />
-            <ProfileEditor
-              profile={profile}
-              isLoadingProfile={Boolean(token) && !profile && !hasBootstrapped}
-              onSave={handleSaveProfile}
-              verificationStatus={verificationStatus}
-              onRequestVerification={handleRequestVerification}
-            />
-            <GeneralSettings themeMode={themeMode} onChangeThemeMode={setThemeMode} />
-          </section>
 
           {/* Preload the next 2 card photos so they're ready before the user swipes */}
           {cards.slice(1, 3).map((c) => c.photos[0]).filter(Boolean).map((url) => (
