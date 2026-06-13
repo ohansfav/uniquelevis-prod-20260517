@@ -28,7 +28,6 @@ const upgradeOptions: CheckoutPlan[] = [
   { plan: "platinum", label: "Platinum", price: "N500",   accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you.",                features: ["See exactly who liked you", "Unlimited likes visibility", "Priority in discovery"] },
   { plan: "silver",   label: "Silver",   price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes visibility with premium discover access.", features: ["Likes visibility", "Premium discover access", "Send messages first"] },
   { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Gold privacy gate and higher-tier visibility.",  features: ["All Silver perks", "Gold privacy gate", "Higher-tier matches"] },
-  { plan: "diamond",  label: "Diamond",  price: "N5,000", accent: "bg-[#7cd4ff] text-[#14304b]", description: "Top-tier privacy and full access.",             features: ["All Gold perks", "Top-tier privacy controls", "Full access to all features", "Diamond badge on profile"] },
 ];
 
 const formatNaira = (amount: number) => `N${amount.toLocaleString("en-NG")}`;
@@ -103,9 +102,9 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
       </p>
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">Current tier: {tierLabel}</p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {cardSlots.map((item, index) => (
-          <article key={item ? item.id : index} className="relative h-48 overflow-hidden rounded-2xl border border-white/15 md:h-56">
+          <article key={item ? item.id : index} className="relative h-48 overflow-hidden rounded-2xl border border-white/15 lg:h-56">
             {item ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

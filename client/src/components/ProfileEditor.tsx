@@ -144,7 +144,7 @@ export default function ProfileEditor({
             void submit(new FormData(event.currentTarget));
           }}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 lg:grid-cols-3">
             {/* Hidden file input for photo upload */}
             <input
               ref={photoFileRef}
@@ -182,12 +182,12 @@ export default function ProfileEditor({
             })}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 lg:grid-cols-2">
             <input className="input" name="firstName" defaultValue={profile.firstName} placeholder="First name" />
             <input className="input" name="age" defaultValue={profile.age} type="number" min={18} max={80} />
-            <input className="input md:col-span-2" name="city" defaultValue={profile.city} placeholder="City" />
-            <textarea className="input min-h-28 md:col-span-2" name="bio" value={bioValue} onChange={(e) => setBioValue(e.target.value)} placeholder="Bio" />
-            <input className="input md:col-span-2" name="interests" defaultValue={profile.interests.join(", ")} placeholder="Interests separated by commas" />
+            <input className="input lg:col-span-2" name="city" defaultValue={profile.city} placeholder="City" />
+            <textarea className="input min-h-28 lg:col-span-2" name="bio" value={bioValue} onChange={(e) => setBioValue(e.target.value)} placeholder="Bio" />
+            <input className="input lg:col-span-2" name="interests" defaultValue={profile.interests.join(", ")} placeholder="Interests separated by commas" />
           </div>
 
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
@@ -217,7 +217,7 @@ export default function ProfileEditor({
               {/* Pets */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Pets</p>
-                <select name="pets" defaultValue={profile.pets ?? "none"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                <select name="pets" defaultValue={profile.pets ?? "none"} className="input mt-1 w-full">
                   <option value="none">No pets</option>
                   <option value="dog_person">Dog person</option>
                   <option value="cat_person">Cat person</option>
@@ -228,7 +228,7 @@ export default function ProfileEditor({
               {/* Drinking */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Drinking</p>
-                <select name="drinking" defaultValue={profile.drinking ?? "sometimes"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                <select name="drinking" defaultValue={profile.drinking ?? "sometimes"} className="input mt-1 w-full">
                   <option value="never">Never</option>
                   <option value="sometimes">Sometimes</option>
                   <option value="often">Often</option>
@@ -238,7 +238,7 @@ export default function ProfileEditor({
               {/* Smoking */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Smoking</p>
-                <select name="smoking" defaultValue={profile.smoking ?? "non_smoker"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                <select name="smoking" defaultValue={profile.smoking ?? "non_smoker"} className="input mt-1 w-full">
                   <option value="non_smoker">Non-smoker</option>
                   <option value="occasionally">Occasionally</option>
                   <option value="smoker">Smoker</option>
@@ -248,7 +248,7 @@ export default function ProfileEditor({
               {/* Workout */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Workout</p>
-                <select name="workout" defaultValue={profile.workout ?? "often"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                <select name="workout" defaultValue={profile.workout ?? "often"} className="input mt-1 w-full">
                   <option value="never">Never</option>
                   <option value="rarely">Rarely</option>
                   <option value="often">Often</option>
