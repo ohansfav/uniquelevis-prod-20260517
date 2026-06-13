@@ -194,9 +194,14 @@ const getAuthErrorContent = (message: string, mode: AuthMode) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.innerHTML = `
-          <button disabled class="google-fallback inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-white opacity-80">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
-            Sign in with Google (configure client)
+          <button disabled class="google-fallback inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] opacity-100">
+            <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
+              <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
+              <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
+              <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
+            </svg>
+            Continue with Google
           </button>
         `;
       };
@@ -1982,10 +1987,15 @@ export default function Home() {
                     void handleGoogleSignIn();
                   }
                 }}
-                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-white hover:brightness-95"
+                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] hover:brightness-95 shadow-sm"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
-                Sign in with Google
+                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
+                  <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
+                  <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
+                  <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
+                </svg>
+                Continue with Google
               </button>
             </div>
 
@@ -2081,10 +2091,15 @@ export default function Home() {
                     void beginLandingTransition(() => handleGoogleSignIn());
                   }
                 }}
-                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-white hover:brightness-95"
+                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] hover:brightness-95 shadow-sm"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.35 11.1h-9.2v2.9h5.3c-.2 1.5-1.3 3-3.5 3-2.2 0-4-1.9-4-4.3s1.8-4.3 4-4.3c1.2 0 2 .5 2.5.9l1.8-1.8C15.2 6 13.8 5.2 12 5.2 7.9 5.2 4.6 8.5 4.6 12.6s3.3 7.4 7.4 7.4c6 0 8.8-4.2 8.8-8.9 0-.6-.1-1.1-.3-1.9z" fill="#fff"/></svg>
-                Sign in with Google
+                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
+                  <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
+                  <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
+                  <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
+                </svg>
+                Continue with Google
               </button>
             </div>
           </div>
