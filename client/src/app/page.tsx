@@ -33,6 +33,7 @@ import {
   sendMessage,
   sendSwipe,
   sendTyping,
+  googleLogin,
   signup,
   updateMyProfile,
   verifyUpgradeCheckout,
@@ -944,6 +945,50 @@ export default function Home() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Scaffold: prompt for an ID token for now. Replace with Google
+      // Identity Services flow in production.
+      const idToken = window.prompt("Paste a Google ID token (scaffold).\n(Use Google Identity on client later)");
+      if (!idToken) {
+        setError("No Google ID token provided.");
+        return;
+      }
+
+      const auth = await googleLogin(idToken.trim());
+
+      setCards([]);
+      setIncomingLikes([]);
+      setLikesCount(0);
+      setLikesUnlocked(false);
+      setMatches([]);
+      setMessages([]);
+      setChatLockByMatch({});
+      setTypingByMatch({});
+      setSelectedMatchId(null);
+      setProfile(null);
+      setNeedsOnboarding(false);
+      setBillingConfig(null);
+      setHasBootstrapped(false);
+      localStorage.removeItem("ul_app_state");
+
+      setToken(auth.accessToken);
+      setRefreshToken(auth.refreshToken);
+      setCurrentUser(auth.user);
+      setShowAuthForm(false);
+      localStorage.setItem("ul_access_token", auth.accessToken);
+      localStorage.setItem("ul_refresh_token", auth.refreshToken);
+      setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
+      await bootstrapData(auth.accessToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openAuthForm = (mode: AuthMode) => {
     setAuthMode(mode);
     setShowAuthForm(true);
@@ -1480,6 +1525,13 @@ export default function Home() {
                 >
                   {copy.ctaExisting}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => beginLandingTransition(() => handleGoogleSignIn())}
+                  className="mt-3 w-full rounded-full border border-white/20 bg-white/8 px-6 py-2 text-sm font-semibold text-white sm:mt-0 sm:ml-3 sm:w-auto"
+                >
+                  Sign in with Google
+                </button>
               </div>
             </div>
 
@@ -1819,6 +1871,14 @@ export default function Home() {
               className="romance-gradient mt-4 w-full rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:brightness-95 disabled:opacity-70"
             >
               {loading ? "Please wait..." : authMode === "login" ? "Enter" : "Create Account"}
+            </button>
+
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="mt-3 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-primary)]"
+            >
+              Sign in with Google (scaffold)
             </button>
 
             {authErrorContent && (

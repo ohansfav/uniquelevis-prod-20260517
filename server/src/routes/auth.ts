@@ -349,6 +349,73 @@ authRouter.post("/auth/refresh", async (req, res) => {
   }
 });
 
+// Simple Google ID token sign-in scaffold.
+// Accepts a Google ID token from the client, verifies it using
+// Google's tokeninfo endpoint, and signs the user in (or creates
+// a new account if none exists). This is intentionally lightweight
+// so you can wire a client-side Google Identity flow later.
+authRouter.post("/auth/google", async (req, res) => {
+  const idToken = String(req.body?.idToken ?? "").trim();
+  if (!idToken) {
+    res.status(400).json({ message: "Missing idToken" });
+    return;
+  }
+
+  try {
+    const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!resp.ok) {
+      res.status(401).json({ message: "Invalid Google ID token" });
+      return;
+    }
+
+    const info = await resp.json();
+    const email = (info.email || "").toString().trim().toLowerCase();
+    if (!email) {
+      res.status(400).json({ message: "Google token did not contain an email" });
+      return;
+    }
+
+    // Optional: validate audience if GOOGLE_CLIENT_ID is set in env.
+    if (process.env.GOOGLE_CLIENT_ID && info.aud && info.aud !== process.env.GOOGLE_CLIENT_ID) {
+      res.status(403).json({ message: "Google ID token audience mismatch" });
+      return;
+    }
+
+    await reloadStorePersistence();
+
+    let user = findUserByEmail(email);
+    if (!user) {
+      // Create a lightweight account for this Google user. Use a random
+      // password so the account can't be used directly with email/password.
+      const firstName = info.given_name || (info.name ? String(info.name).split(" ")[0] : "") || "New";
+      const randPw = randomUUID();
+      const created = await createUser({
+        email,
+        password: randPw,
+        firstName,
+        age: 25,
+        city: "",
+        bio: "",
+      });
+      user = findUserByEmail(email);
+    }
+
+    if (!user) {
+      res.status(500).json({ message: "Failed to create or find user" });
+      return;
+    }
+
+    const accessToken = signAccessToken(user.id, toSessionProfile(user));
+    const refreshToken = signRefreshToken(user.id, toSessionProfile(user));
+    addRefreshSession(user.id, refreshToken);
+    await flushStorePersistence();
+
+    res.json({ user: publicUser(user), accessToken, refreshToken });
+  } catch (err) {
+    res.status(500).json({ message: "Google token verification failed" });
+  }
+});
+
 authRouter.post("/auth/logout", requireAuth, async (req, res) => {
   await reloadStorePersistence();
   revokeUserRefreshSessions(req.authUserId!);

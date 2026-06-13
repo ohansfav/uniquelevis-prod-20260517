@@ -155,6 +155,18 @@ export const adminLogin = async (
   return (await res.json()) as AuthResponse;
 };
 
+export const googleLogin = async (idToken: string) => {
+  const res = await fetch(`${API_BASE}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Google login failed"));
+  }
+  return (await res.json()) as AuthResponse;
+};
+
 export const getDiscoverCards = async (token: string, filters: DiscoverQueryFilters = {}) => {
   const params = new URLSearchParams();
   if (filters.mode) params.set("mode", filters.mode);
