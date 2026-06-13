@@ -598,6 +598,10 @@ export const publicUser = (user: UserRecord): PublicUser => ({
   bio: user.bio,
   interests: user.interests,
   photos: user.photos,
+  pets: user.pets,
+  drinking: user.drinking,
+  smoking: user.smoking,
+  workout: user.workout,
   gender: user.gender,
   lookingFor: user.lookingFor,
   datingIntent: user.datingIntent ?? "serious",
@@ -685,7 +689,7 @@ export const ensureSessionUser = (userId: string, profile?: SessionProfileClaim)
 
 export const updateUserProfile = (
   userId: string,
-  input: Partial<Pick<UserRecord, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor" | "datingIntent">>,
+  input: Partial<Pick<UserRecord, "firstName" | "age" | "city" | "bio" | "interests" | "photos" | "gender" | "lookingFor" | "datingIntent" | "pets" | "drinking" | "smoking" | "workout">>,
 ) => {
   const user = users.find((u) => u.id === userId);
   if (!user) return null;

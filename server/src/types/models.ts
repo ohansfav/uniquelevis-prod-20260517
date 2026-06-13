@@ -10,6 +10,10 @@ export type PublicUser = {
   bio: string;
   interests: string[];
   photos: string[];
+  pets?: string;
+  drinking?: string;
+  smoking?: string;
+  workout?: string;
   gender?: "man" | "woman" | "other";
   lookingFor?: "men" | "women" | "everyone";
   datingIntent?: RelationshipIntent;

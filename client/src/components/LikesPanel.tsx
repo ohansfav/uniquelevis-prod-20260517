@@ -106,13 +106,13 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
       <div className="grid grid-cols-2 gap-3">
         {cardSlots.map((item, index) => (
           <article key={item ? item.id : index} className="relative h-48 overflow-hidden rounded-2xl border border-white/15 md:h-56">
-            {item && likesUnlocked ? (
+            {item ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getProfileImage(item.byUser.photos[0], item.byUser.firstName, 440, 52)}
                   alt={item.byUser.firstName}
-                  className="h-full w-full object-cover"
+                  className={`h-full w-full object-cover ${likesUnlocked ? "" : "filter blur-sm scale-105"}`}
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/20" />
@@ -122,9 +122,7 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
                 </div>
               </>
             ) : (
-              <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-slate-300/40 via-slate-200/20 to-slate-500/30">
-                {!likesUnlocked && <div className="absolute inset-0 backdrop-blur-md" />}
-              </div>
+              <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-slate-300/40 via-slate-200/20 to-slate-500/30" />
             )}
           </article>
         ))}

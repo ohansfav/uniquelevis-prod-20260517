@@ -59,18 +59,33 @@ export const fileToOptimizedDataUrl = async (
 
   ctx.drawImage(source, 0, 0, width, height);
 
-  let best = canvas.toDataURL("image/jpeg", 0.9);
-  if (dataUrlByteSize(best) <= maxBytes) {
-    return best;
-  }
-
-  for (let quality = 0.82; quality >= 0.46; quality -= 0.08) {
-    const candidate = canvas.toDataURL("image/jpeg", quality);
-    best = candidate;
-    if (dataUrlByteSize(candidate) <= maxBytes) {
-      return candidate;
+  // Try WebP first (modern browsers) then fall back to JPEG.
+  const tryEncode = (mime: string, qualities: number[]) => {
+    let last: string | null = null;
+    for (const q of qualities) {
+      try {
+        const candidate = canvas.toDataURL(mime, q);
+        last = candidate;
+        if (dataUrlByteSize(candidate) <= maxBytes) return candidate;
+      } catch {
+        // toDataURL may throw for unsupported mime types; stop trying this mime.
+        return null;
+      }
     }
+    return last;
+  };
+
+  const qualities = [0.92, 0.84, 0.76, 0.68, 0.6, 0.52];
+
+  // Prefer WebP if supported
+  const webp = tryEncode("image/webp", qualities);
+  if (webp && dataUrlByteSize(webp) <= maxBytes) return webp;
+  if (webp) {
+    // If webp exists but is still too large, return the best webp candidate (smaller than high-quality jpeg likely)
+    if (dataUrlByteSize(webp) <= maxBytes * 1.2) return webp;
   }
 
-  return best;
+  // Fallback to JPEG
+  const jpeg = tryEncode("image/jpeg", qualities) ?? canvas.toDataURL("image/jpeg", 0.9);
+  return jpeg;
 };

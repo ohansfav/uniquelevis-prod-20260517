@@ -79,6 +79,10 @@ export default function ProfileEditor({
     const bio = bioValue.trim();
     const age = Number(formData.get("age") ?? profile.age);
     const interestsRaw = String(formData.get("interests") ?? "");
+    const pets = String(formData.get("pets") ?? profile.pets ?? "").trim();
+    const drinking = String(formData.get("drinking") ?? profile.drinking ?? "").trim();
+    const smoking = String(formData.get("smoking") ?? profile.smoking ?? "").trim();
+    const workout = String(formData.get("workout") ?? profile.workout ?? "").trim();
 
     const interests = interestsRaw
       .split(",")
@@ -93,6 +97,10 @@ export default function ProfileEditor({
       age,
       interests,
       photos: photos.length > 0 ? photos : profile.photos,
+      pets: pets || profile.pets,
+      drinking: drinking || profile.drinking,
+      smoking: smoking || profile.smoking,
+      workout: workout || profile.workout,
     });
   };
 
@@ -206,17 +214,46 @@ export default function ProfileEditor({
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Lifestyle</p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              {[
-                ["Pets", "Dog person"],
-                ["Drinking", "Sometimes"],
-                ["Smoking", "Non-smoker"],
-                ["Workout", "Often"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">{label}</p>
-                  <p className="mt-1 font-semibold text-[var(--color-text)]">{value}</p>
-                </div>
-              ))}
+              {/* Pets */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Pets</p>
+                <select name="pets" defaultValue={profile.pets ?? "none"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                  <option value="none">No pets</option>
+                  <option value="dog_person">Dog person</option>
+                  <option value="cat_person">Cat person</option>
+                  <option value="has_pet">Has pet</option>
+                </select>
+              </div>
+
+              {/* Drinking */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Drinking</p>
+                <select name="drinking" defaultValue={profile.drinking ?? "sometimes"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                  <option value="never">Never</option>
+                  <option value="sometimes">Sometimes</option>
+                  <option value="often">Often</option>
+                </select>
+              </div>
+
+              {/* Smoking */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Smoking</p>
+                <select name="smoking" defaultValue={profile.smoking ?? "non_smoker"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                  <option value="non_smoker">Non-smoker</option>
+                  <option value="occasionally">Occasionally</option>
+                  <option value="smoker">Smoker</option>
+                </select>
+              </div>
+
+              {/* Workout */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Workout</p>
+                <select name="workout" defaultValue={profile.workout ?? "often"} className="mt-1 w-full rounded-lg border p-2 text-sm">
+                  <option value="never">Never</option>
+                  <option value="rarely">Rarely</option>
+                  <option value="often">Often</option>
+                </select>
+              </div>
             </div>
           </div>
 

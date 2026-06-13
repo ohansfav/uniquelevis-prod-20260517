@@ -39,7 +39,8 @@ const env = {
     BILLING_DEFAULT_PROVIDER: process.env.BILLING_DEFAULT_PROVIDER ?? "flutterwave",
     BILLING_PROVIDER_TOKEN: process.env.BILLING_PROVIDER_TOKEN ?? "",
     ADMIN_UNLOCK_PHRASE: process.env.ADMIN_UNLOCK_PHRASE ?? "diamonds-open",
-    ADMIN_ALLOWED_IPS: (process.env.ADMIN_ALLOWED_IPS ?? "127.0.0.1,::1,::ffff:127.0.0.1")
+    // Optional allowlist. When unset, admin routes rely on token-based auth only.
+    ADMIN_ALLOWED_IPS: (process.env.ADMIN_ALLOWED_IPS ?? "")
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean),

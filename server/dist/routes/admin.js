@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { approveVerification, findUserById, flushStorePersistence, likes, matches, messages, rejectVerification, reloadStorePersistence, setMembershipTier, users, } from "../data/store.js";
+import { approveVerification, deleteUserCascade, findUserById, flushStorePersistence, likes, matches, messages, rejectVerification, reloadStorePersistence, setMembershipTier, users, } from "../data/store.js";
 import { requireAdmin } from "../middleware/require-admin.js";
 export const adminRouter = Router();
 // GET /admin/users — all users (no passwords)
@@ -113,4 +113,16 @@ adminRouter.post("/admin/billing/test-upgrade", requireAdmin, async (req, res) =
     }
     await flushStorePersistence();
     res.json({ ok: true, userId: parsed.data.userId, tier: parsed.data.tier, mode: "simulated-flutterwave-webhook" });
+});
+// DELETE /admin/users/:userId — remove user and linked records
+adminRouter.delete("/admin/users/:userId", requireAdmin, async (req, res) => {
+    await reloadStorePersistence();
+    const result = deleteUserCascade(req.params.userId);
+    if (!result.ok) {
+        const status = result.message === "User not found" ? 404 : 400;
+        res.status(status).json({ message: result.message });
+        return;
+    }
+    await flushStorePersistence();
+    res.json({ ok: true, message: result.message, userId: req.params.userId });
 });
