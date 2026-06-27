@@ -67,4 +67,10 @@ app.use("/api", adminRouter);
 
 app.use(errorHandler);
 
+if (process.env.VERCEL !== "1") {
+  app.listen(env.PORT, () => {
+    console.log(`Unique Levi's API running on port ${env.PORT}`);
+  });
+}
+
 export default app;

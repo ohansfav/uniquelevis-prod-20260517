@@ -1,11 +1,13 @@
-import { Router, type IRouter } from "express";
-import { HealthCheckResponse } from "@workspace/api-zod";
+import { Router } from "express";
+import { getStoreDiagnostics } from "../data/store.js";
 
-const router: IRouter = Router();
+export const healthRouter = Router();
 
-router.get("/healthz", (_req, res) => {
-  const data = HealthCheckResponse.parse({ status: "ok" });
-  res.json(data);
+healthRouter.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "unique-levis-api",
+    timestamp: new Date().toISOString(),
+    store: getStoreDiagnostics(),
+  });
 });
-
-export default router;
