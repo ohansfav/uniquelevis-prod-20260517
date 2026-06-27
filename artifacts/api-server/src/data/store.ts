@@ -15,7 +15,27 @@ import type {
 import type { SessionProfileClaim } from "../utils/jwt.js";
 
 const seedPassword = bcrypt.hashSync("Password123!", 10);
-const adminPassword = bcrypt.hashSync("AdminPass123!", 10);
+
+// Admin password comes from environment — never hardcoded.
+// In development with no ADMIN_PASSWORD set, a random password is generated
+// (admin login will be unavailable until the env var is configured).
+const resolveAdminPassword = (): string => {
+  const configured = env.ADMIN_PASSWORD?.trim();
+  if (configured && configured.length >= 8) {
+    return configured;
+  }
+  if (process.env.NODE_ENV === "production" && !configured) {
+    throw new Error(
+      "ADMIN_PASSWORD env var is required in production. " +
+      "Set a strong password before deploying."
+    );
+  }
+  // Dev only: generate an ephemeral password. Admin login won't work unless
+  // ADMIN_PASSWORD is set — intentional, so local dev never has a backdoor.
+  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+};
+
+const adminPassword = bcrypt.hashSync(resolveAdminPassword(), 10);
 
 const isVercelRuntime = process.env.VERCEL === "1";
 const STORE_FILE = isVercelRuntime

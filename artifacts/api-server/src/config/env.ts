@@ -1,6 +1,8 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
+const isProduction = NODE_ENV === "production";
 const clientOriginRaw = process.env.CLIENT_ORIGIN ?? "http://localhost:3000";
 
 const clientOrigins = clientOriginRaw
@@ -18,14 +20,35 @@ const kvRestToken =
   ?? process.env.UPSTASH_REDIS_REST_TOKEN
   ?? "";
 
+const resolveSecret = (envVar: string, name: string): string => {
+  const provided = process.env[envVar];
+  if (provided && provided.trim().length >= 16) {
+    return provided.trim();
+  }
+  if (isProduction) {
+    throw new Error(
+      `Missing or too-short ${name} (env: ${envVar}). ` +
+      `Set a secure random secret of at least 16 characters in environment variables before deploying.`
+    );
+  }
+  // Development/test only: generate an ephemeral secret per process start.
+  // Tokens will be invalidated on restart — acceptable for local dev.
+  const ephemeral = randomBytes(32).toString("hex");
+  console.warn(
+    `[env] ${name} not set — using ephemeral secret for this process. ` +
+    `Set ${envVar} in your environment to keep tokens valid across restarts.`
+  );
+  return ephemeral;
+};
+
 const env = {
   PORT: Number(process.env.PORT ?? 5000),
   NODE_ENV,
   CLIENT_ORIGIN: clientOrigins[0] ?? "http://localhost:3000",
   CLIENT_ORIGINS: clientOrigins,
   APP_BASE_URL: process.env.APP_BASE_URL ?? "http://localhost:3000",
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET ?? "dev_refresh_secret",
+  JWT_ACCESS_SECRET: resolveSecret("JWT_ACCESS_SECRET", "JWT access secret"),
+  JWT_REFRESH_SECRET: resolveSecret("JWT_REFRESH_SECRET", "JWT refresh secret"),
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN ?? "15m",
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
   FLUTTERWAVE_PUBLIC_KEY: process.env.FLUTTERWAVE_PUBLIC_KEY ?? "",
@@ -47,7 +70,7 @@ const env = {
   BILLING_DEFAULT_PROVIDER: process.env.BILLING_DEFAULT_PROVIDER ?? "flutterwave",
   BILLING_PROVIDER_TOKEN: process.env.BILLING_PROVIDER_TOKEN ?? "",
   ADMIN_UNLOCK_PHRASE: process.env.ADMIN_UNLOCK_PHRASE ?? "diamonds-open",
-  // Optional allowlist. When unset, admin routes rely on token-based auth only.
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? "",
   ADMIN_ALLOWED_IPS: (process.env.ADMIN_ALLOWED_IPS ?? "")
     .split(",")
     .map((value) => value.trim())
@@ -57,21 +80,5 @@ const env = {
   KV_REST_API_TOKEN: kvRestToken,
   STORE_KV_KEY: process.env.STORE_KV_KEY ?? "unique-levis:store-snapshot:v1",
 };
-
-const assertRequiredInProduction = (name: string, value: string, invalidValues: string[] = []) => {
-  if (env.NODE_ENV !== "production") {
-    return;
-  }
-
-  const normalized = value.trim();
-  if (!normalized || invalidValues.includes(normalized)) {
-    throw new Error(`Missing or unsafe ${name}. Set a secure value in environment variables.`);
-  }
-};
-
-assertRequiredInProduction("JWT_ACCESS_SECRET", env.JWT_ACCESS_SECRET, ["dev_access_secret"]);
-assertRequiredInProduction("JWT_REFRESH_SECRET", env.JWT_REFRESH_SECRET, ["dev_refresh_secret"]);
-assertRequiredInProduction("CLIENT_ORIGIN", env.CLIENT_ORIGIN, ["http://localhost:3000"]);
-assertRequiredInProduction("APP_BASE_URL", env.APP_BASE_URL, ["http://localhost:3000"]);
 
 export { env };

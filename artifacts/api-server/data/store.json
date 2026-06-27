@@ -1,21 +1,6 @@
 {
   "users": [
     {
-      "id": "u-admin",
-      "email": "admin@uniquelevis.com",
-      "passwordHash": "$2a$10$/GqE.Cbua4p3ssIoZ2HIbeCiZZnBefrETK.SUZPYRKE9h8L42dIvm",
-      "firstName": "Admin",
-      "age": 30,
-      "city": "Lagos",
-      "bio": "App Administrator",
-      "interests": [],
-      "photos": [],
-      "isAdmin": true,
-      "membershipTier": "diamond",
-      "verified": true,
-      "verificationStatus": "approved"
-    },
-    {
       "id": "u-100",
       "email": "ava@example.com",
       "passwordHash": "$2a$10$MtkZvxPugezrJknw2fqxruSWGGNAIH9HWWYOIV68OLpIPP6ILv596",
@@ -35,7 +20,8 @@
       "photos": [
         "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
         "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80"
-      ]
+      ],
+      "datingIntent": "serious"
     },
     {
       "id": "u-101",
@@ -56,7 +42,8 @@
       "photos": [
         "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=900&q=80",
         "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
-      ]
+      ],
+      "datingIntent": "long-term"
     },
     {
       "id": "u-102",
@@ -73,7 +60,11 @@
       ],
       "photos": [
         "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-103",
@@ -91,7 +82,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1542204625-de293a06df02?w=900&q=80",
         "https://images.unsplash.com/photo-1546961329-78bef0414d7c?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-104",
@@ -109,7 +104,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1521119989659-a83eee488004?w=900&q=80",
         "https://images.unsplash.com/photo-1463453091185-61582044d556?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "u-105",
@@ -127,7 +126,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&q=80",
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-106",
@@ -145,7 +148,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=900&q=80",
         "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-107",
@@ -163,7 +170,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
         "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "u-108",
@@ -181,7 +192,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=80",
         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-109",
@@ -199,7 +214,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
         "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-110",
@@ -217,7 +236,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900&q=80",
         "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "u-111",
@@ -235,7 +258,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80",
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-112",
@@ -253,7 +280,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&q=80",
         "https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-113",
@@ -271,7 +302,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=900&q=80",
         "https://images.unsplash.com/photo-1463453091185-61582044d556?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "u-114",
@@ -289,7 +324,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&q=80",
         "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-115",
@@ -307,7 +346,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=900&q=80",
         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-116",
@@ -325,7 +368,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1506863530036-1efeddceb993?w=900&q=80",
         "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "u-117",
@@ -343,7 +390,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1542204625-de293a06df02?w=900&q=80",
         "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "short-term"
     },
     {
       "id": "u-118",
@@ -361,7 +412,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80",
         "https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "serious"
     },
     {
       "id": "u-119",
@@ -379,7 +434,11 @@
       "photos": [
         "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=900&q=80",
         "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=900&q=80"
-      ]
+      ],
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none",
+      "datingIntent": "long-term"
     },
     {
       "id": "810249c9-e94f-40f8-bbb0-5922e7b17918",
@@ -398,17 +457,26 @@
       "membershipTier": "free",
       "verified": false,
       "verificationStatus": "none"
+    },
+    {
+      "id": "u-admin",
+      "email": "admin@uniquelevis.com",
+      "passwordHash": "$2a$10$70jH5CsatUWg9rLHcQxkdOivEauF5kWVsljDoGpb55Fo/QvdeedEG",
+      "firstName": "Admin",
+      "age": 30,
+      "city": "Lagos",
+      "bio": "App Administrator",
+      "interests": [],
+      "photos": [],
+      "isAdmin": true,
+      "membershipTier": "diamond",
+      "verified": true,
+      "verificationStatus": "approved",
+      "datingIntent": "serious"
     }
   ],
   "likes": [],
   "matches": [],
   "messages": [],
-  "refreshSessions": [
-    {
-      "id": "44fff0a2-86ef-4a04-b188-f19c6fe35c7b",
-      "userId": "810249c9-e94f-40f8-bbb0-5922e7b17918",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MTAyNDljOS1lOTRmLTQwZjgtYmJiMC01OTIyZTdiMTc5MTgiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJmaXJzdE5hbWUiOiJUZXN0IiwiYWdlIjoyNSwiY2l0eSI6IkxhZ29zIiwiZGF0aW5nSW50ZW50Ijoic2VyaW91cyIsIm1lbWJlcnNoaXBUaWVyIjoiZnJlZSIsInZlcmlmaWVkIjpmYWxzZSwidmVyaWZpY2F0aW9uU3RhdHVzIjoibm9uZSJ9LCJpYXQiOjE3ODI1NjQwMzMsImV4cCI6MTc4MzE2ODgzM30.r5B_cBA5ucehjhUexZ88tyB5rN9ZNfwJq008Xbciw_s",
-      "createdAt": "2026-06-27T12:40:33.264Z"
-    }
-  ]
+  "refreshSessions": []
 }
