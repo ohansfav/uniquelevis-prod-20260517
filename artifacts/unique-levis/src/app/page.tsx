@@ -39,6 +39,8 @@ import {
 import type { DiscoverCard, IncomingLikeItem, MatchItem, MessageItem, PaidMembershipTier, PublicUser, VerificationStatus } from "@/lib/types";
 import type { BillingProvider } from "@/lib/types";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import MatchCelebration from "@/components/MatchCelebration";
+import { getProfileImage } from "@/lib/image";
 
 type AuthMode = "login" | "signup";
 type MobileTab = "swipe" | "explore" | "likes" | "chat" | "profile";
@@ -402,6 +404,7 @@ export default function Home() {
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const refreshInFlightRef = useRef<Promise<string> | null>(null);
+  const [celebrationMatch, setCelebrationMatch] = useState<{ matchId: string; matchName: string; matchPhoto: string } | null>(null);
   const streamRecoveryInFlightRef = useRef(false);
   const streamFailureCountRef = useRef(0);
   const [streamRetryTick, setStreamRetryTick] = useState(0);
@@ -1416,8 +1419,11 @@ export default function Home() {
         setLikesCount(nextLikes.count);
         setLikesUnlocked(nextLikes.canViewLikes);
 
+        // Show match celebration overlay before navigating to chat
+        const matchPhoto = getProfileImage(swipedCard.photos[0], swipedCard.firstName, 200, 60);
+        setCelebrationMatch({ matchId: response.match.id, matchName: swipedName, matchPhoto });
+
         setSelectedMatchId(response.match.id);
-        setMobileTab("chat");
         try {
           const nextMessages = await withSessionRecovery((authToken) => getMessages(authToken, response.match!.id));
           clearMatchChatLock(response.match.id);
@@ -2061,16 +2067,34 @@ export default function Home() {
 
           <div className="hidden md:block">
           <section className="mx-auto w-full space-y-3">
-              <div style={{ height: 660 }}>
+              <div className="relative" style={{ height: 660 }}>
               {activeCard ? (
-              <SwipeCard
-                user={activeCard}
-                onLike={() => onSwipe("like")}
-                onSkip={() => onSwipe("skip")}
-                onSuperLike={() => onSwipe("super_like")}
-                isBusy={false}
-              />
-            ) : (
+                <>
+                  {/* Card stack — behind cards for depth effect */}
+                  {cards[2] && (
+                    <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] overflow-hidden" style={{ transform: "scale(0.88) translateY(10%)", zIndex: 1, opacity: 0.55, filter: "brightness(0.7)" }}>
+                      <img src={getProfileImage(cards[2].photos[0], cards[2].firstName, 400, 50)} alt="" className="h-full w-full object-cover" draggable={false} />
+                      <div className="absolute inset-0 bg-black/40" />
+                    </div>
+                  )}
+                  {cards[1] && (
+                    <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] overflow-hidden" style={{ transform: "scale(0.94) translateY(5%)", zIndex: 2, opacity: 0.75, filter: "brightness(0.8)" }}>
+                      <img src={getProfileImage(cards[1].photos[0], cards[1].firstName, 400, 50)} alt="" className="h-full w-full object-cover" draggable={false} />
+                      <div className="absolute inset-0 bg-black/25" />
+                    </div>
+                  )}
+                  {/* Active card */}
+                  <div className="absolute inset-0" style={{ zIndex: 3 }}>
+                    <SwipeCard
+                      user={activeCard}
+                      onLike={() => onSwipe("like")}
+                      onSkip={() => onSwipe("skip")}
+                      onSuperLike={() => onSwipe("super_like")}
+                      isBusy={false}
+                    />
+                  </div>
+                </>
+              ) : (
               <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-center shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
                   <p className="mb-3 text-5xl">💔</p>
                   <p className="font-semibold text-[var(--color-primary)]">No more profiles nearby.</p>
@@ -2149,15 +2173,33 @@ export default function Home() {
                 </button>
               </div>
               {/* Card fills remaining space */}
-              <div className="min-h-0 flex-1 px-3 pb-2 pt-1">
+              <div className="relative min-h-0 flex-1 px-3 pb-2 pt-1">
                 {activeCard ? (
-                  <SwipeCard
-                    user={activeCard}
-                    onLike={() => onSwipe("like")}
-                    onSkip={() => onSwipe("skip")}
-                    onSuperLike={() => onSwipe("super_like")}
-                    isBusy={false}
-                  />
+                  <>
+                    {/* Mobile card stack — behind cards */}
+                    {cards[2] && (
+                      <div className="pointer-events-none absolute inset-3 rounded-[2.5rem] overflow-hidden" style={{ transform: "scale(0.88) translateY(10%)", zIndex: 1, opacity: 0.5, filter: "brightness(0.65)" }}>
+                        <img src={getProfileImage(cards[2].photos[0], cards[2].firstName, 360, 50)} alt="" className="h-full w-full object-cover" draggable={false} />
+                        <div className="absolute inset-0 bg-black/45" />
+                      </div>
+                    )}
+                    {cards[1] && (
+                      <div className="pointer-events-none absolute inset-3 rounded-[2.5rem] overflow-hidden" style={{ transform: "scale(0.94) translateY(5%)", zIndex: 2, opacity: 0.72, filter: "brightness(0.78)" }}>
+                        <img src={getProfileImage(cards[1].photos[0], cards[1].firstName, 360, 50)} alt="" className="h-full w-full object-cover" draggable={false} />
+                        <div className="absolute inset-0 bg-black/25" />
+                      </div>
+                    )}
+                    {/* Active card */}
+                    <div className="absolute inset-3" style={{ zIndex: 3 }}>
+                      <SwipeCard
+                        user={activeCard}
+                        onLike={() => onSwipe("like")}
+                        onSkip={() => onSwipe("skip")}
+                        onSuperLike={() => onSwipe("super_like")}
+                        isBusy={false}
+                      />
+                    </div>
+                  </>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 text-center">
                     <p className="mb-3 text-5xl">💔</p>
@@ -2235,6 +2277,23 @@ export default function Home() {
         <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl bg-[#2f1730] px-4 py-3 text-sm text-white shadow-[0_16px_26px_rgba(20,10,25,0.35)] md:bottom-6 md:left-auto md:right-6 md:w-[340px]">
           {error}
         </div>
+      )}
+
+      {/* Match Celebration Overlay */}
+      {celebrationMatch && (
+        <MatchCelebration
+          myPhoto={getProfileImage(profile?.photos?.[0], profile?.firstName ?? "You", 200, 60)}
+          matchPhoto={celebrationMatch.matchPhoto}
+          matchName={celebrationMatch.matchName}
+          onMessage={() => {
+            setCelebrationMatch(null);
+            setMobileTab("chat");
+          }}
+          onKeepSwiping={() => {
+            setCelebrationMatch(null);
+            setMobileTab("swipe");
+          }}
+        />
       )}
     </div>
   );
