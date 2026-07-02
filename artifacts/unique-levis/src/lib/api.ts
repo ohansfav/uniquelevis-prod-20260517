@@ -114,9 +114,9 @@ export const login = async (
 export const signup = async (payload: {
   email: string;
   password: string;
-  firstName: string;
-  age: number;
-  city: string;
+  firstName?: string;
+  age?: number;
+  city?: string;
 }) => {
   const url = `${API_BASE}/auth/signup`;
   console.log(`[API] Signup request to: ${url}`);

@@ -473,10 +473,35 @@
       "verified": true,
       "verificationStatus": "approved",
       "datingIntent": "serious"
+    },
+    {
+      "id": "0d9c7f21-b937-45bc-bd82-9afa860fafb8",
+      "email": "test2@example.com",
+      "passwordHash": "$2a$10$yYwRHXf6WtKl479L7SExWu50aQCK7Zt3hfMx.99/Pt0lcIYaIr386",
+      "firstName": "New User",
+      "age": 25,
+      "city": "",
+      "bio": "New here and open to meaningful connections.",
+      "interests": [
+        "Music",
+        "Movies"
+      ],
+      "photos": [],
+      "datingIntent": "serious",
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
     }
   ],
   "likes": [],
   "matches": [],
   "messages": [],
-  "refreshSessions": []
+  "refreshSessions": [
+    {
+      "id": "6fe8a79c-e426-4318-809e-4656a9f21af5",
+      "userId": "0d9c7f21-b937-45bc-bd82-9afa860fafb8",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZDljN2YyMS1iOTM3LTQ1YmMtYmQ4Mi05YWZhODYwZmFmYjgiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6InRlc3QyQGV4YW1wbGUuY29tIiwiZmlyc3ROYW1lIjoiTmV3IFVzZXIiLCJhZ2UiOjI1LCJjaXR5IjoiIiwiZGF0aW5nSW50ZW50Ijoic2VyaW91cyIsIm1lbWJlcnNoaXBUaWVyIjoiZnJlZSIsInZlcmlmaWVkIjpmYWxzZSwidmVyaWZpY2F0aW9uU3RhdHVzIjoibm9uZSJ9LCJpYXQiOjE3ODMwMjc1NzAsImV4cCI6MTc4MzYzMjM3MH0.sCUsAfIodN_w2u7rdFvaOvQeQSkvETYj2CaUNBd0-Z4",
+      "createdAt": "2026-07-02T21:26:10.300Z"
+    }
+  ]
 }

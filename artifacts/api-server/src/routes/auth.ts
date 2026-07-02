@@ -136,9 +136,9 @@ authRouter.get("/auth/human-check", (_req, res) => {
 const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  firstName: z.string().min(2),
-  age: z.number().int().min(18).max(80),
-  city: z.string().min(2),
+  firstName: z.string().min(1).optional(),
+  age: z.number().int().min(18).max(80).optional(),
+  city: z.string().min(1).optional(),
   bio: z.string().max(500).optional(),
 });
 
@@ -169,6 +169,9 @@ authRouter.post("/auth/signup", async (req, res) => {
     ...parsed.data,
     email: normalizedEmail,
     password: normalizedPassword,
+    firstName: parsed.data.firstName?.trim() || "New User",
+    age: parsed.data.age ?? 25,
+    city: parsed.data.city?.trim() || "",
   });
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));

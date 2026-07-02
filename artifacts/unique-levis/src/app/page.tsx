@@ -911,9 +911,6 @@ export default function Home() {
           : await signup({
               email: normalizedEmail,
               password: normalizedPassword,
-              firstName,
-              age: Number(ageInput) || 18,
-              city,
             });
 
       setCards([]);
@@ -1706,169 +1703,145 @@ export default function Home() {
         <div className="auth-grid-glow" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0f0a20]/78 via-[#201433]/74 to-[#1f122f]/80" />
 
-        <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-4 py-8 md:px-6">
-          <div className="glass-card auth-form w-full max-w-md rounded-3xl p-6 md:p-7">
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#6b7280]">
-              Welcome Back
+        <main className="relative z-10 mx-auto flex min-h-[calc(100vh-60px)] w-full max-w-md flex-col items-center justify-center px-6 py-10">
+          <div className="w-full text-center">
+            {/* Heart logo */}
+            <div className="romance-gradient mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full text-xl shadow-[0_12px_28px_rgba(255,79,122,0.5)]">
+              <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="currentColor"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402C1 3.199 3.539 1 6.5 1c1.898 0 3.698.798 5.5 2.6C13.802 1.798 15.602 1 17.5 1 20.461 1 23 3.199 23 7.191c0 4.105-5.37 8.863-11 14.402z"/></svg>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight text-white">{authMode === "login" ? "Welcome Back" : "Create Account"}</h2>
+            <p className="mt-1 text-sm text-white/60">
+              {authMode === "login" ? "Log in to continue swiping" : "Sign up to start matching"}
             </p>
-            <h2 className="text-4xl font-black text-[var(--color-primary)]">Unique Levi&apos;s</h2>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">Let&apos;s get you in and help you meet someone amazing.</p>
+          </div>
 
-            <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-xs text-[var(--color-text-muted)]">
-              {authMode === "login"
-                ? "Login tip: enter the same email and password you used when creating your account."
-                : "Sign up tip: any password is allowed, including symbols and spaces."}
+          {/* Login / Sign Up toggle */}
+          <div className="mt-6 flex w-full rounded-full bg-white/10 p-1 backdrop-blur">
+            <button
+              onClick={() => setAuthMode("login")}
+              className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
+                authMode === "login" ? "bg-white text-[#1b1730] shadow" : "text-white/70 hover:text-white"
+              }`}
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => setAuthMode("signup")}
+              className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
+                authMode === "signup" ? "bg-white text-[#1b1730] shadow" : "text-white/70 hover:text-white"
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Form */}
+          <div className="mt-6 w-full space-y-4">
+            <div>
+              <input
+                className="w-full rounded-2xl border border-white/15 bg-white/8 px-5 py-3.5 text-sm text-white placeholder-white/40 outline-none transition focus:border-[#ff4f7a]/50 focus:bg-white/12"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+                autoComplete="email"
+                placeholder="Email"
+              />
             </div>
-
-            <div className="mt-5 mb-4 flex gap-2">
+            <div className="relative">
+              <input
+                className="w-full rounded-2xl border border-white/15 bg-white/8 px-5 py-3.5 pr-16 text-sm text-white placeholder-white/40 outline-none transition focus:border-[#ff4f7a]/50 focus:bg-white/12"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                placeholder="Password"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleAuth();
+                  }
+                }}
+              />
               <button
-                onClick={() => setAuthMode("login")}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  authMode === "login"
-                    ? "romance-gradient text-white"
-                    : "bg-[var(--color-surface)] text-[var(--color-primary)]"
-                }`}
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-white/50 hover:text-white/80"
               >
-                Login
-              </button>
-              <button
-                onClick={() => setAuthMode("signup")}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  authMode === "signup"
-                    ? "romance-gradient text-white"
-                    : "bg-[var(--color-surface)] text-[var(--color-primary)]"
-                }`}
-              >
-                Sign Up
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="space-y-1 md:col-span-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">Email Address</span>
-                <input
-                  className="input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                />
-              </label>
-              <label className="space-y-1 md:col-span-1">
-                <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">Password</span>
-                <div className="relative">
-                  <input
-                    className="input pr-16"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type={showPassword ? "text" : "password"}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                    placeholder={authMode === "login" ? "Enter your password" : "Any password you choose"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((value) => !value)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-primary)] hover:bg-[var(--color-surface-elevated)]"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </label>
-              {authMode === "signup" && (
-                <>
-                  <label className="space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">First Name</span>
-                    <input
-                      className="input"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Levi"
-                    />
-                  </label>
-                  <label className="space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">City</span>
-                    <input
-                      className="input"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="e.g. Lagos"
-                    />
-                  </label>
-                  <label className="space-y-1 md:col-span-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-primary)]">Age</span>
-                    <input
-                      className="input"
-                      value={ageInput}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/[^0-9]/g, "");
-                        setAgeInput(v);
-                      }}
-                      inputMode="numeric"
-                      placeholder="Your age (18–80)"
-                    />
-                  </label>
-                </>
-              )}
-            </div>
-
-            <p className="mt-3 text-xs text-[#6b7280]">
-              {authMode === "login"
-                ? "If you are new here, switch to Sign Up first."
-                : "By signing up, you will enter Discover immediately after creating your account."}
-            </p>
 
             <button
               onClick={handleAuth}
               disabled={loading}
-              className="romance-gradient mt-4 w-full rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:brightness-95 disabled:opacity-70"
+              className="romance-gradient mt-2 w-full rounded-2xl py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(255,79,122,0.4)] transition active:scale-95 disabled:opacity-60"
             >
-              {loading ? "Please wait..." : authMode === "login" ? "Enter" : "Create Account"}
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Please wait...
+                </span>
+              ) : authMode === "login" ? (
+                "Log In"
+              ) : (
+                "Create Account"
+              )}
             </button>
 
-            <div className="mt-3 flex items-center gap-3">
-              <div id="google-btn-auth" className="hidden" />
-              <button
-                type="button"
-                onClick={() => {
-                  const g = (window as any).google;
-                  if (g?.accounts?.id) {
-                    try { g.accounts.id.prompt(); } catch { /* ignore */ }
-                  } else {
-                    void handleGoogleSignIn();
-                  }
-                }}
-                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] hover:brightness-95 shadow-sm"
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
-                  <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
-                  <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
-                  <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
-                </svg>
-                Continue with Google
-              </button>
-            </div>
+            {/* Google */}
+            <button
+              type="button"
+              onClick={() => {
+                const g = (window as any).google;
+                if (g?.accounts?.id) {
+                  try { g.accounts.id.prompt(); } catch { /* ignore */ }
+                } else {
+                  void handleGoogleSignIn();
+                }
+              }}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white px-5 py-3 text-sm font-semibold text-[#202124] transition hover:brightness-95 active:scale-95"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
+                <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
+                <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
+                <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
+              </svg>
+              Continue with Google
+            </button>
 
             {authErrorContent && (
-              <div className="auth-alert mt-4" data-tone={authErrorContent.tone} role="alert" aria-live="polite">
-                <div className="auth-alert__badge" aria-hidden="true">
-                  {authErrorContent.tone === "warning" ? "!" : "x"}
-                </div>
-                <div className="min-w-0">
-                  <p className="auth-alert__title">{authErrorContent.title}</p>
-                  <p className="auth-alert__message">{authErrorContent.description}</p>
-                </div>
+              <div className="mt-2 rounded-xl border border-red-400/30 bg-red-500/15 p-3 text-center text-sm text-red-200">
+                {authErrorContent.description}
               </div>
             )}
           </div>
+
+          {/* Bottom link */}
+          <p className="mt-6 text-center text-xs text-white/40">
+            {authMode === "login" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button type="button" onClick={() => setAuthMode("signup")} className="font-semibold text-[#ff4f7a] hover:underline">
+                  Sign Up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button type="button" onClick={() => setAuthMode("login")} className="font-semibold text-[#ff4f7a] hover:underline">
+                  Log In
+                </button>
+              </>
+            )}
+          </p>
         </main>
       </div>
     );

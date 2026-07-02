@@ -21,6 +21,11 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow all origins in development; restrict in production
+      if (env.NODE_ENV !== "production") {
+        callback(null, true);
+        return;
+      }
       if (!origin) {
         callback(null, true);
         return;
@@ -30,12 +35,10 @@ app.use(
         if (configuredOrigin === origin) {
           return true;
         }
-
         if (configuredOrigin.startsWith("*")) {
           const suffix = configuredOrigin.slice(1);
           return suffix.length > 0 && origin.endsWith(suffix);
         }
-
         return false;
       });
 
