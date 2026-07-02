@@ -590,9 +590,72 @@
       "targetUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
       "type": "like",
       "createdAt": "2026-07-02T21:43:27.837Z"
+    },
+    {
+      "id": "068022cb-41dd-458e-a709-e645cdf484dc",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "f0adde7d-e062-4448-af08-0a8c8e0fd64e",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:35.007Z"
+    },
+    {
+      "id": "e512b17e-1137-43d8-947a-7ae353740ed3",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-100",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:36.863Z"
+    },
+    {
+      "id": "249ccc9b-d11f-433a-afdd-25b487d5fb8a",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-114",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:38.718Z"
+    },
+    {
+      "id": "ca8820db-bc1d-4d30-9369-8281af0c0a2e",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-103",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:40.338Z"
+    },
+    {
+      "id": "d3ca32d0-38f5-49c3-891f-f2efd2f95d83",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-106",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:44.007Z"
+    },
+    {
+      "id": "dca8c25b-0789-4dce-a5b0-d565ec220f00",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-107",
+      "type": "skip",
+      "createdAt": "2026-07-02T21:47:46.548Z"
+    },
+    {
+      "id": "b49f3f5d-fcdd-4060-99cc-c3fedd338737",
+      "byUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "targetUserId": "u-110",
+      "type": "like",
+      "createdAt": "2026-07-02T21:47:58.469Z"
+    },
+    {
+      "id": "ceac99ac-c1ae-4d49-82ab-18f3aec5e43a",
+      "byUserId": "u-110",
+      "targetUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "type": "like",
+      "createdAt": "2026-07-02T21:47:58.469Z"
     }
   ],
-  "matches": [],
+  "matches": [
+    {
+      "id": "b1f644e9-bf74-4e77-89c9-f249db132f2a",
+      "userA": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "userB": "u-110",
+      "matchedAt": "2026-07-02T21:47:58.471Z"
+    }
+  ],
   "messages": [],
   "refreshSessions": [
     {
@@ -612,6 +675,12 @@
       "userId": "f0adde7d-e062-4448-af08-0a8c8e0fd64e",
       "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMGFkZGU3ZC1lMDYyLTQ0NDgtYWYwOC0wYThjOGUwZmQ2NGUiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6InN3aXBldGVzdEBleGFtcGxlLmNvbSIsImZpcnN0TmFtZSI6Ik5ldyBVc2VyIiwiYWdlIjoyNSwiY2l0eSI6IiIsImRhdGluZ0ludGVudCI6InNlcmlvdXMiLCJtZW1iZXJzaGlwVGllciI6ImZyZWUiLCJ2ZXJpZmllZCI6ZmFsc2UsInZlcmlmaWNhdGlvblN0YXR1cyI6Im5vbmUifSwiaWF0IjoxNzgzMDI4NTc3LCJleHAiOjE3ODM2MzMzNzd9.LI9yj6LUVs_vhm5lZDqUAGcHn83-Kz5xLMCEGVwX0OE",
       "createdAt": "2026-07-02T21:42:57.519Z"
+    },
+    {
+      "id": "a4173630-a713-465f-a2a7-e6da439773c6",
+      "userId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZjhhOGRiNi02ZjU4LTQ5NTEtYjA4NS0yNWFhOWI1ZTQzMjQiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6Im9oYW5za2lhcmExQGdtYWlsLmNvbSIsImZpcnN0TmFtZSI6Ik5ldyBVc2VyIiwiYWdlIjoyNSwiY2l0eSI6IiIsImRhdGluZ0ludGVudCI6InNlcmlvdXMiLCJtZW1iZXJzaGlwVGllciI6ImZyZWUiLCJ2ZXJpZmllZCI6ZmFsc2UsInZlcmlmaWNhdGlvblN0YXR1cyI6Im5vbmUifSwiaWF0IjoxNzgzMDI4ODQ4LCJleHAiOjE3ODM2MzM2NDh9.A1-yHA8FLk2qvK0yUeMiBpKYUC9LyZoM_uLNxsBKzvo",
+      "createdAt": "2026-07-02T21:47:28.641Z"
     }
   ]
 }
