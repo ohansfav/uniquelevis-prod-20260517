@@ -521,6 +521,24 @@
       "verificationStatus": "none",
       "gender": "woman",
       "lookingFor": "everyone"
+    },
+    {
+      "id": "f0adde7d-e062-4448-af08-0a8c8e0fd64e",
+      "email": "swipetest@example.com",
+      "passwordHash": "$2a$10$Ev57NG7Vi62We76S63BfJ.NHFIat7bFvjUVmyb/DCtV9yRBoth/C2",
+      "firstName": "New User",
+      "age": 25,
+      "city": "",
+      "bio": "New here and open to meaningful connections.",
+      "interests": [
+        "Music",
+        "Movies"
+      ],
+      "photos": [],
+      "datingIntent": "serious",
+      "membershipTier": "free",
+      "verified": false,
+      "verificationStatus": "none"
     }
   ],
   "likes": [
@@ -565,6 +583,13 @@
       "targetUserId": "u-101",
       "type": "skip",
       "createdAt": "2026-07-02T21:31:44.107Z"
+    },
+    {
+      "id": "2a3c5257-922d-4c46-b173-0c280c378b57",
+      "byUserId": "f0adde7d-e062-4448-af08-0a8c8e0fd64e",
+      "targetUserId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
+      "type": "like",
+      "createdAt": "2026-07-02T21:43:27.837Z"
     }
   ],
   "matches": [],
@@ -581,6 +606,12 @@
       "userId": "1f8a8db6-6f58-4951-b085-25aa9b5e4324",
       "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZjhhOGRiNi02ZjU4LTQ5NTEtYjA4NS0yNWFhOWI1ZTQzMjQiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6Im9oYW5za2lhcmExQGdtYWlsLmNvbSIsImZpcnN0TmFtZSI6Ik5ldyBVc2VyIiwiYWdlIjoyNSwiY2l0eSI6IiIsImRhdGluZ0ludGVudCI6InNlcmlvdXMiLCJtZW1iZXJzaGlwVGllciI6ImZyZWUiLCJ2ZXJpZmllZCI6ZmFsc2UsInZlcmlmaWNhdGlvblN0YXR1cyI6Im5vbmUifSwiaWF0IjoxNzgzMDI3NjYzLCJleHAiOjE3ODM2MzI0NjN9.PMZ7ATaFJO0L-yBvpDivLolyPVYE8Qc3CakBhgNk6BM",
       "createdAt": "2026-07-02T21:27:43.069Z"
+    },
+    {
+      "id": "e0463ed2-fa76-4464-847d-c61eebf9d4cd",
+      "userId": "f0adde7d-e062-4448-af08-0a8c8e0fd64e",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMGFkZGU3ZC1lMDYyLTQ0NDgtYWYwOC0wYThjOGUwZmQ2NGUiLCJ0eXAiOiJyZWZyZXNoIiwicHJvZmlsZSI6eyJlbWFpbCI6InN3aXBldGVzdEBleGFtcGxlLmNvbSIsImZpcnN0TmFtZSI6Ik5ldyBVc2VyIiwiYWdlIjoyNSwiY2l0eSI6IiIsImRhdGluZ0ludGVudCI6InNlcmlvdXMiLCJtZW1iZXJzaGlwVGllciI6ImZyZWUiLCJ2ZXJpZmllZCI6ZmFsc2UsInZlcmlmaWNhdGlvblN0YXR1cyI6Im5vbmUifSwiaWF0IjoxNzgzMDI4NTc3LCJleHAiOjE3ODM2MzMzNzd9.LI9yj6LUVs_vhm5lZDqUAGcHn83-Kz5xLMCEGVwX0OE",
+      "createdAt": "2026-07-02T21:42:57.519Z"
     }
   ]
 }

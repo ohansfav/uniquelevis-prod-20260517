@@ -150,7 +150,7 @@ export const adminLogin = async (
     }),
   });
   if (!res.ok) {
-    throw new Error("Admin login failed");
+    throw new Error(`Admin login failed (${res.status})`);
   }
   return (await res.json()) as AuthResponse;
 };
@@ -203,7 +203,7 @@ export const sendSwipe = async (
   });
 
   if (!res.ok) {
-    throw new Error("Swipe failed");
+    throw new Error(`Swipe failed (${res.status})`);
   }
 
   return (await res.json()) as { ok: boolean; match: MatchItem | null };
