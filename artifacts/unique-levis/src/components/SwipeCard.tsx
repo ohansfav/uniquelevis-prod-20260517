@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import type { DiscoverCard } from "@/lib/types";
 import { getProfileImage } from "@/lib/image";
 
@@ -10,7 +10,7 @@ type Props = {
   isBusy?: boolean;
 };
 
-export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props) {
+function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props) {
   const cardRef = useRef<HTMLElement>(null);
   const [dragging, setDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -62,7 +62,7 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
       if (dir === "like") onLike();
       else if (dir === "skip") onSkip();
       else onSuperLike();
-    }, 340);
+    }, 260);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -95,7 +95,7 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
   const rot = flyingOut === "like" ? 30 : flyingOut === "skip" ? -30 : rotation;
   const scale = flyingOut === "super_like" ? 0.75 : 1;
   const opacity = flyingOut ? 0 : 1;
-  const transition = dragging ? "none" : "transform 320ms cubic-bezier(0.25,0.46,0.45,0.94), opacity 320ms";
+  const transition = dragging ? "none" : "transform 220ms cubic-bezier(0.25,0.46,0.45,0.94), opacity 180ms";
 
   return (
     <article
@@ -125,10 +125,10 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
 
       {/* Preload next photo */}
       {user.photos[photoIndex + 1] && (
-        <img
-          src={getProfileImage(user.photos[photoIndex + 1], user.firstName, 560, 70)}
-          alt="" aria-hidden fetchPriority="low"
-          style={{ display: "none" }} draggable={false}
+        <link
+          rel="prefetch"
+          as="image"
+          href={getProfileImage(user.photos[photoIndex + 1], user.firstName, 560, 70)}
         />
       )}
 
@@ -380,3 +380,5 @@ export default function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = 
     </article>
   );
 }
+
+export default memo(SwipeCard, (prev, next) => prev.user.id === next.user.id && prev.isBusy === next.isBusy);

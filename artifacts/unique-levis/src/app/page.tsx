@@ -1458,7 +1458,7 @@ export default function Home() {
                 <div className="pointer-events-none mb-6 w-full overflow-hidden lg:hidden" aria-hidden="true">
                   <div className="card-marquee gap-3 px-2">
                     {doubled.map((p, i) => (
-                      <div key={i} className="relative mr-3 h-52 w-36 flex-shrink-0 overflow-hidden rounded-2xl border border-white/20 shadow-[0_16px_32px_rgba(0,0,0,0.5)]">
+                      <div key={`${p.name}-${i}`} className="relative mr-3 h-52 w-36 flex-shrink-0 overflow-hidden rounded-2xl border border-white/20 shadow-[0_16px_32px_rgba(0,0,0,0.5)]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={p.src} alt="" className="h-full w-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
