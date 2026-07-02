@@ -107,108 +107,6 @@ const getAuthErrorContent = (message: string, mode: AuthMode) => {
     description: normalizedMessage || "We could not complete this request right now. Please try again shortly.",
     tone: "danger" as const,
   };
-
-  const processGoogleCredential = async (idToken: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const auth = await googleLogin(idToken.trim());
-
-      setCards([]);
-      setIncomingLikes([]);
-      setLikesCount(0);
-      setLikesUnlocked(false);
-      setMatches([]);
-      setMessages([]);
-      setChatLockByMatch({});
-      setTypingByMatch({});
-      setSelectedMatchId(null);
-      setProfile(null);
-      setNeedsOnboarding(false);
-      setBillingConfig(null);
-      setHasBootstrapped(false);
-      localStorage.removeItem("ul_app_state");
-
-      setToken(auth.accessToken);
-      setRefreshToken(auth.refreshToken);
-      setCurrentUser(auth.user);
-      setShowAuthForm(false);
-      localStorage.setItem("ul_access_token", auth.accessToken);
-      localStorage.setItem("ul_refresh_token", auth.refreshToken);
-      setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
-      await bootstrapData(auth.accessToken);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initialize Google Identity Services and render buttons into the
-  // containers above when `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is present.
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    const initGSI = () => {
-      const g = (window as any).google;
-      if (!g?.accounts?.id) return;
-
-      g.accounts.id.initialize({
-        client_id: clientId,
-        callback: (resp: any) => {
-          if (resp?.credential) void processGoogleCredential(resp.credential);
-        },
-      });
-
-      const renderIfPresent = (id: string, options?: any) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerHTML = "";
-        g.accounts.id.renderButton(el, options || { theme: "outline", size: "large" });
-      };
-
-      renderIfPresent("google-btn-auth", { theme: "outline", size: "large" });
-      renderIfPresent("google-btn-landing", { theme: "outline", size: "large" });
-      // Show One Tap prompt (if browser allows)
-      try {
-        g.accounts.id.prompt();
-      } catch (e) {
-        // ignore prompt errors
-      }
-    };
-
-    if (!document.getElementById("gsi-client-script")) {
-      const s = document.createElement("script");
-      s.id = "gsi-client-script";
-      s.src = "https://accounts.google.com/gsi/client";
-      s.async = true;
-      s.defer = true;
-      s.onload = initGSI;
-      document.head.appendChild(s);
-    } else {
-      initGSI();
-    }
-    // If no client id is configured, render a disabled styled fallback button
-    if (!clientId) {
-      const renderFallback = (id: string) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerHTML = `
-          <button disabled class="google-fallback inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] opacity-100">
-            <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
-              <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
-              <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
-              <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
-            </svg>
-            Continue with Google
-          </button>
-        `;
-      };
-      renderFallback("google-btn-auth");
-      renderFallback("google-btn-landing");
-    }
-  }, []);
 };
 
 const landingCopy: Record<
@@ -409,6 +307,13 @@ export default function Home() {
   const streamFailureCountRef = useRef(0);
   const [streamRetryTick, setStreamRetryTick] = useState(0);
 
+  // React-level splash overlay auto-dismiss (HTML boot splash handles initial load)
+  const [showSplash, setShowSplash] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), 2800);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new Event("ul-app-ready"));
@@ -445,17 +350,17 @@ export default function Home() {
   };
 
   const copy = landingCopy[selectedLanguage];
-  const splashOverlay = (
-    <div className="splash-overlay fixed inset-0 z-50 grid place-items-center bg-[#0e0c17] px-6 text-white pointer-events-none">
+  const splashOverlay = showSplash ? (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#0e0c17] px-6 text-white transition-opacity duration-500" style={{ opacity: showSplash ? 1 : 0, pointerEvents: "none" }}>
       <div className="text-center">
-        <div className="splash-pulse romance-gradient mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full text-2xl shadow-[0_24px_45px_rgba(255,79,122,0.55)]">
-          ❤
+        <div className="romance-gradient mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full text-2xl shadow-[0_24px_45px_rgba(255,79,122,0.55)]" style={{ animation: "ul_pulse 1.4s ease-in-out infinite" }}>
+          <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="currentColor"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402C1 3.199 3.539 1 6.5 1c1.898 0 3.698.798 5.5 2.6C13.802 1.798 15.602 1 17.5 1 20.461 1 23 3.199 23 7.191c0 4.105-5.37 8.863-11 14.402z"/></svg>
         </div>
-        <h1 className="text-3xl">Unique Levi&apos;s</h1>
-        <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/75">Swipe Into Something Real</p>
+        <h1 className="text-3xl font-black" style={{ fontFamily: "'Playfair Display', serif" }}>Unique Levi&apos;s</h1>
+        <p className="mt-2 text-xs uppercase tracking-[0.14em] text-white/60">Swipe Into Something Real</p>
       </div>
     </div>
-  );
+  ) : null;
 
   const processingOverlay = isTransitioning ? (
     <div className="splash-overlay fixed inset-0 z-[90] grid place-items-center bg-[#0e0c17]/95 px-6 text-white">
@@ -1470,7 +1375,6 @@ export default function Home() {
   if (!isAuthenticated && !showAuthForm) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#0f1019] text-white">
-        {splashOverlay}
         {processingOverlay}
         <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=640&q=50" alt="Landing background" className="pointer-events-none absolute inset-0 object-cover opacity-30" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#140c22]/68 via-[#1a1230]/62 to-[#120f21]/88" />
@@ -1573,7 +1477,7 @@ export default function Home() {
             })()}
 
             {/* Desktop: left floating cards */}
-            <div className="pointer-events-none absolute left-0 top-1/2 hidden -translate-y-1/2 flex-col gap-4 lg:flex" aria-hidden="true">
+            <div className="pointer-events-none absolute left-0 top-[12%] hidden flex-col gap-4 lg:flex" aria-hidden="true">
               <div className="relative h-72 w-48 overflow-hidden rounded-3xl border-2 border-white/20 shadow-[0_24px_50px_rgba(0,0,0,0.5)] rotate-[-5deg] translate-x-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
@@ -1635,7 +1539,7 @@ export default function Home() {
             </div>
 
             {/* Desktop: right floating cards */}
-            <div className="pointer-events-none absolute right-0 top-1/2 hidden -translate-y-1/2 flex-col gap-4 lg:flex" aria-hidden="true">
+            <div className="pointer-events-none absolute right-0 top-[12%] hidden flex-col gap-4 lg:flex" aria-hidden="true">
               <div className="relative h-72 w-48 overflow-hidden rounded-3xl border-2 border-white/20 shadow-[0_24px_50px_rgba(0,0,0,0.5)] rotate-[5deg] -translate-x-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
@@ -1660,7 +1564,7 @@ export default function Home() {
           <section className="mx-auto mb-5 grid w-full max-w-5xl gap-3 md:grid-cols-3">
             <article className="overflow-hidden rounded-3xl border border-white/20 bg-[#161226]/72 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               <div className="relative h-52 w-full">
-                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=380&q=50" alt="Dating success story" className="object-cover" />
+                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=380&q=50" alt="Dating success story" className="absolute inset-0 h-full w-full object-cover" />
               </div>
               <div className="p-4 text-left">
                 <p className="text-sm font-semibold text-white">Curated Matches</p>
@@ -1670,7 +1574,7 @@ export default function Home() {
 
             <article className="overflow-hidden rounded-3xl border border-white/20 bg-[#161226]/72 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               <div className="relative h-52 w-full">
-                <img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=380&q=50" alt="Live conversation preview" className="object-cover" />
+                <img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=380&q=50" alt="Live conversation preview" className="absolute inset-0 h-full w-full object-cover" />
               </div>
               <div className="p-4 text-left">
                 <p className="text-sm font-semibold text-white">Live Conversations</p>
@@ -1680,7 +1584,7 @@ export default function Home() {
 
             <article className="overflow-hidden rounded-3xl border border-white/20 bg-[#161226]/72 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               <div className="relative h-52 w-full">
-                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=380&q=50" alt="Premium profile preview" className="object-cover" />
+                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=380&q=50" alt="Premium profile preview" className="absolute inset-0 h-full w-full object-cover" />
               </div>
               <div className="p-4 text-left">
                 <p className="text-sm font-semibold text-white">Verified Profiles</p>
@@ -1693,7 +1597,7 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Products</p>
             <h3 className="mt-2 text-2xl text-white md:text-3xl">Everything You Need To Connect</h3>
             <div className="relative mt-4 h-48 w-full overflow-hidden rounded-2xl border border-white/10 md:h-56">
-              <img src="https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=420&q=50" alt="People connecting in a social space" className="object-cover" />
+              <img src="https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=420&q=50" alt="People connecting in a social space" className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-4">
@@ -1720,7 +1624,7 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Learn</p>
             <h3 className="mt-2 text-2xl text-white md:text-3xl">How It Works</h3>
             <div className="relative mt-4 h-44 w-full overflow-hidden rounded-2xl border border-white/10 md:h-52">
-              <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=420&q=50" alt="Couple enjoying a date" className="object-cover" />
+              <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=420&q=50" alt="Couple enjoying a date" className="absolute inset-0 h-full w-full object-cover" />
             </div>
             <ol className="mt-4 grid gap-3 text-sm text-white/85 md:grid-cols-3">
               <li className="rounded-2xl border border-white/10 bg-white/10 p-3">1. Build your profile in under a minute.</li>
@@ -1733,7 +1637,7 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Safety</p>
             <h3 className="mt-2 text-2xl text-white md:text-3xl">Safety First, Always</h3>
             <div className="relative mt-4 h-44 w-full overflow-hidden rounded-2xl border border-white/10 md:h-52">
-              <img src="https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=420&q=50" alt="Trust and safety visual" className="object-cover" />
+              <img src="https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=420&q=50" alt="Trust and safety visual" className="absolute inset-0 h-full w-full object-cover" />
             </div>
             <ul className="mt-4 grid gap-3 text-sm text-white/85 md:grid-cols-3">
               <li className="rounded-2xl border border-white/10 bg-white/10 p-3">Easy profile and message reporting tools.</li>
@@ -1746,7 +1650,7 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Download</p>
             <h3 className="mt-2 text-2xl text-white md:text-3xl">Start On Web, Continue Anywhere</h3>
             <div className="relative mt-4 h-44 w-full overflow-hidden rounded-2xl border border-white/10 md:h-52">
-              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=420&q=50" alt="People using app across devices" className="object-cover" />
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=420&q=50" alt="People using app across devices" className="absolute inset-0 h-full w-full object-cover" />
             </div>
             <p className="mt-3 text-sm text-white/85">Use Unique Levi&apos;s in your browser now, with mobile app releases coming soon.</p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -1776,7 +1680,6 @@ export default function Home() {
 
     return (
       <div className="relative min-h-screen overflow-hidden bg-[var(--color-primary)]">
-        {splashOverlay}
         {/* Modern sticky header */}
         <div className="sticky top-0 z-50 border-b border-white/8 bg-gradient-to-r from-[#17142a]/95 via-[#1a1430]/95 to-[#17142a]/95 px-4 py-3.5 backdrop-blur-md shadow-lg">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
@@ -1991,19 +1894,19 @@ export default function Home() {
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
         <div className="absolute inset-0 grid grid-cols-3 grid-rows-2">
           <div className="relative col-span-1 row-span-1 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=420&q=50" alt="" className="object-cover" />
+            <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=420&q=50" alt="" className="absolute inset-0 h-full w-full object-cover" />
           </div>
           <div className="relative col-span-1 row-span-2 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=420&q=50" alt="" className="object-cover" />
+            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=420&q=50" alt="" className="absolute inset-0 h-full w-full object-cover" />
           </div>
           <div className="relative col-span-1 row-span-1 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=420&q=50" alt="" className="object-cover" />
+            <img src="https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=420&q=50" alt="" className="absolute inset-0 h-full w-full object-cover" />
           </div>
           <div className="relative col-span-1 row-span-1 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=420&q=50" alt="" className="object-cover" />
+            <img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=420&q=50" alt="" className="absolute inset-0 h-full w-full object-cover" />
           </div>
           <div className="relative col-span-1 row-span-1 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=420&q=50" alt="" className="object-cover" />
+            <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=420&q=50" alt="" className="absolute inset-0 h-full w-full object-cover" />
           </div>
         </div>
         {/* Heavy blur + tint overlay */}
@@ -2011,7 +1914,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-[color-mix(in_oklab,var(--color-surface-elevated)_82%,transparent)] via-[color-mix(in_oklab,var(--color-surface)_78%,transparent)] to-[color-mix(in_oklab,var(--color-bg)_86%,transparent)]" />
       </div>
 
-      {splashOverlay}
       <NavBar
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
