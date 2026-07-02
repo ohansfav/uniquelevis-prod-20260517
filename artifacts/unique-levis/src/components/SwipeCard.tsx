@@ -252,18 +252,18 @@ function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props)
           )}
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-center gap-3.5 px-5 pb-5 pt-2">
-          {/* Skip */}
+        {/* Action buttons — Tinder-sized */}
+        <div className="flex items-center justify-center gap-4 px-5 pb-5 pt-2">
+          {/* Skip — large like Tinder */}
           <button
             type="button" data-action="skip"
             disabled={isBusy || Boolean(flyingOut)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); triggerFly("skip"); }}
-            className="flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-rose-400/50 bg-white shadow-[0_8px_24px_rgba(255,79,122,0.22)] transition active:scale-90 disabled:opacity-50"
+            className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] border-rose-400 bg-white shadow-[0_10px_30px_rgba(255,79,122,0.3)] transition active:scale-85 disabled:opacity-40"
             aria-label="Pass"
           >
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <svg viewBox="0 0 24 24" className="h-8 w-8 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
           </button>
@@ -274,24 +274,24 @@ function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props)
             disabled={isBusy || Boolean(flyingOut)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); triggerFly("super_like"); }}
-            className="flex h-[50px] w-[50px] items-center justify-center rounded-full border-2 border-blue-400/50 bg-white shadow-[0_6px_18px_rgba(92,75,180,0.24)] transition active:scale-90 disabled:opacity-50"
+            className="flex h-[56px] w-[56px] items-center justify-center rounded-full border-[3px] border-blue-400 bg-white shadow-[0_8px_22px_rgba(59,130,246,0.3)] transition active:scale-85 disabled:opacity-40"
             aria-label="Super like"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-blue-500" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="h-6 w-6 text-blue-500" fill="currentColor">
               <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/>
             </svg>
           </button>
 
-          {/* Like */}
+          {/* Like — large like Tinder */}
           <button
             type="button" data-action="like"
             disabled={isBusy || Boolean(flyingOut)}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); triggerFly("like"); }}
-            className="flex h-[60px] w-[60px] items-center justify-center rounded-full romance-gradient shadow-[0_8px_28px_rgba(255,79,122,0.55)] transition active:scale-90 disabled:opacity-50"
+            className="flex h-[72px] w-[72px] items-center justify-center rounded-full romance-gradient shadow-[0_12px_32px_rgba(255,79,122,0.5)] transition active:scale-85 disabled:opacity-40"
             aria-label="Like"
           >
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="currentColor">
               <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402C1 3.199 3.539 1 6.5 1c1.898 0 3.698.798 5.5 2.6C13.802 1.798 15.602 1 17.5 1 20.461 1 23 3.199 23 7.191c0 4.105-5.37 8.863-11 14.402z"/>
             </svg>
           </button>
@@ -301,10 +301,10 @@ function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props)
             type="button" data-action="details"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setShowDetails((p) => !p); }}
-            className="flex h-[50px] w-[50px] items-center justify-center rounded-full border-2 border-white/30 bg-black/50 text-white backdrop-blur-sm transition active:scale-90"
+            className="flex h-[56px] w-[56px] items-center justify-center rounded-full border-[3px] border-white/40 bg-black/40 text-white backdrop-blur-sm transition active:scale-85"
             aria-label={showDetails ? "Hide details" : "Show details"}
           >
-            <svg viewBox="0 0 24 24" className={`h-5 w-5 transition-transform duration-200 ${showDetails ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className={`h-6 w-6 transition-transform duration-200 ${showDetails ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12l7 7 7-7" />
             </svg>
           </button>
