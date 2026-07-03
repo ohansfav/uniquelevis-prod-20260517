@@ -21,6 +21,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow all origins in dev; allow any Replit or configured origin in production
       if (env.NODE_ENV !== "production") {
         callback(null, true);
         return;
@@ -29,7 +30,12 @@ app.use(
         callback(null, true);
         return;
       }
-
+      // Allow any Replit app domain (*.replit.app) and localhost
+      if (origin.endsWith(".replit.app") || origin.includes("localhost")) {
+        callback(null, true);
+        return;
+      }
+      // Also check configured origins
       const allowed = env.CLIENT_ORIGINS.some((configuredOrigin) => {
         if (configuredOrigin === origin) {
           return true;
