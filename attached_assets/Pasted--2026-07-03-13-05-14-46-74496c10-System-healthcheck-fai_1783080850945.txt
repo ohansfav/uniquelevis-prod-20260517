@@ -1,0 +1,154 @@
+
+2026-07-03 13:05:14.46
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:14.54
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:15.58
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:16.43
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:18.14
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:18.27
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:19.44
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:21.11
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:21.62
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:21.87
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:22.59
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:23.91
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:24.37
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:26.10
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:27.72
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:28.48
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:29.16
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:31.11
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:32.24
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:33.00
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:34.09
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:34.97
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:35.90
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:36.88
+74496c10
+System
+seccomp port detection incomplete, trying /proc/net/tcp fallback expected=[8080] seccompDetected=0
+
+2026-07-03 13:05:36.89
+74496c10
+System
+all artifact processes stopped
+
+2026-07-03 13:05:36.89
+74496c10
+System
+sending SIGTERM to artifact process artifact=artifacts/api-server
+
+2026-07-03 13:05:36.89
+74496c10
+System
+not all artifact ports opened within timeout expected=[8080] detected=0
+
+2026-07-03 13:05:36.89
+74496c10
+System
+a port configuration was specified but the required port was never opened
+
+2026-07-03 13:05:37.24
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+2026-07-03 13:05:38.58
+74496c10
+System
+healthcheck failed error=healthcheck /api returned status 500
+
+Wrap
+
+Colors

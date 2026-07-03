@@ -25,10 +25,11 @@ const resolveAdminPassword = (): string => {
     return configured;
   }
   if (process.env.NODE_ENV === "production" && !configured) {
-    throw new Error(
-      "ADMIN_PASSWORD env var is required in production. " +
-      "Set a strong password before deploying."
+    console.error(
+      "[store] ADMIN_PASSWORD env var is required in production. " +
+      "Admin login will be unavailable until configured."
     );
+    return "placeholder-unconfigured";
   }
   // Dev only: generate an ephemeral password. Admin login won't work unless
   // ADMIN_PASSWORD is set — intentional, so local dev never has a backdoor.

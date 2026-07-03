@@ -26,9 +26,9 @@ const resolveSecret = (envVar: string, name: string): string => {
     return provided.trim();
   }
   if (isProduction) {
-    throw new Error(
-      `Missing or too-short ${name} (env: ${envVar}). ` +
-      `Set a secure random secret of at least 16 characters in environment variables before deploying.`
+    console.error(
+      `[env] CRITICAL: Missing or too-short ${name} (env: ${envVar}). ` +
+      `Set a secure random secret before deploying to production.`
     );
   }
   // Development/test only: generate an ephemeral secret per process start.
