@@ -161,10 +161,10 @@ const adminUser: UserRecord = {
   id: "u-admin",
   email: "admin@uniquelevis.com",
   passwordHash: adminPassword,
-  firstName: "Admin",
+  firstName: "Platform Admin",
   age: 30,
   city: "Lagos",
-  bio: "App Administrator",
+  bio: "Full-access platform administrator",
   interests: [],
   photos: [],
   isAdmin: true,
@@ -461,7 +461,8 @@ const seedUsers: UserRecord[] = [
   },
 ];
 
-export const users: UserRecord[] = [adminUser, ...seedUsers];
+// Start with only admin — no seed/demo accounts in production
+export const users: UserRecord[] = [adminUser];
 
 export const likes: LikeRecord[] = [];
 export const matches: MatchRecord[] = [];
@@ -469,19 +470,18 @@ export const messages: MessageRecord[] = [];
 export const refreshSessions: RefreshSessionRecord[] = [];
 
 const defaultSnapshot = (): StoreSnapshot => ({
-  users: [adminUser, ...seedUsers],
+  users: [adminUser],
   likes: [],
   matches: [],
   messages: [],
   refreshSessions: [],
 });
 
+// Only ensure admin user exists on startup — never re-add demo/bot accounts
 const ensureSeedUsers = () => {
-  for (const seed of [adminUser, ...seedUsers]) {
-    const found = users.some((u) => u.email.toLowerCase() === seed.email.toLowerCase());
-    if (!found) {
-      users.push({ ...seed });
-    }
+  const found = users.some((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
+  if (!found) {
+    users.push({ ...adminUser });
   }
 };
 

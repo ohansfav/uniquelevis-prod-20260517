@@ -70,7 +70,9 @@ const env = {
   BILLING_DEFAULT_PROVIDER: process.env.BILLING_DEFAULT_PROVIDER ?? "flutterwave",
   BILLING_PROVIDER_TOKEN: process.env.BILLING_PROVIDER_TOKEN ?? "",
   ADMIN_UNLOCK_PHRASE: process.env.ADMIN_UNLOCK_PHRASE ?? "diamonds-open",
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? "",
+  // Default admin password — change via Replit Secrets for production security
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? "UniqueLevisAdmin2024!",
+
   ADMIN_ALLOWED_IPS: (process.env.ADMIN_ALLOWED_IPS ?? "")
     .split(",")
     .map((value) => value.trim())
