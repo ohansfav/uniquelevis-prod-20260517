@@ -25,9 +25,10 @@ type Props = {
 };
 
 const upgradeOptions: CheckoutPlan[] = [
-  { plan: "platinum", label: "Platinum", price: "N500",   accent: "bg-[#ffc38a] text-[#3c2414]", description: "See exactly who liked you.", features: ["See exactly who liked you", "Unlimited likes visibility", "Priority in discovery"] },
-  { plan: "silver",   label: "Silver",   price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes + premium discover access.",  features: ["Likes visibility", "Premium discover access", "Send messages first"] },
-  { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "All Silver perks + Gold privacy.", features: ["All Silver perks", "Gold privacy gate", "Higher-tier matches"] },
+  { plan: "platinum", label: "Platinum", price: "N500",   accent: "bg-[#ffc38a] text-[#3c2414]", description: "See who liked your profile.", features: ["See exactly who liked you", "Unlimited likes visibility", "Full profile visibility"] },
+  { plan: "silver",   label: "Silver",   price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes + direct messaging.",  features: ["See who liked you", "Unlimited direct messages", "Full profile visibility"] },
+  { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Premium gatekeeping + all perks.", features: ["All Silver perks", "Only Gold/Silver can view you", "Only Gold/Silver can message you"] },
+  { plan: "diamond",  label: "Diamond",  price: "N5,000", accent: "bg-[#b8f2e6] text-[#1a3c34]", description: "Elite gatekeeping + full access.", features: ["All Gold perks", "Only Diamond/Gold can view you", "Only Diamond/Gold can message you"] },
 ];
 
 const formatNaira = (amount: number) => `N${amount.toLocaleString("en-NG")}`;
