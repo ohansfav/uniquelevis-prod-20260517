@@ -13,7 +13,8 @@
       "isAdmin": true,
       "membershipTier": "diamond",
       "verified": true,
-      "verificationStatus": "approved"
+      "verificationStatus": "approved",
+      "datingIntent": "serious"
     }
   ],
   "likes": [],

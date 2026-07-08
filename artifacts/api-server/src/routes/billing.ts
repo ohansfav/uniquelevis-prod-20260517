@@ -145,18 +145,10 @@ const parseReferencePayload = (reference: string) => {
 };
 
 const resolveAmount = (plan: PaidPlan) => {
-  const normalizeAmount = (amount: number) => {
-    // Guard against accidental x10 pricing in env values.
-    if (Number.isFinite(amount) && amount >= 5000 && amount % 10 === 0) {
-      return amount / 10;
-    }
-    return amount;
-  };
-
-  if (plan === "platinum") return normalizeAmount(env.BILLING_AMOUNT_PLATINUM);
-  if (plan === "silver") return normalizeAmount(env.BILLING_AMOUNT_SILVER);
-  if (plan === "gold") return normalizeAmount(env.BILLING_AMOUNT_GOLD);
-  return normalizeAmount(env.BILLING_AMOUNT_DIAMOND);
+  if (plan === "platinum") return env.BILLING_AMOUNT_PLATINUM;
+  if (plan === "silver") return env.BILLING_AMOUNT_SILVER;
+  if (plan === "gold") return env.BILLING_AMOUNT_GOLD;
+  return env.BILLING_AMOUNT_DIAMOND;
 };
 
 const isSafeHeaderMatch = (expected: string, candidate: string) => {
