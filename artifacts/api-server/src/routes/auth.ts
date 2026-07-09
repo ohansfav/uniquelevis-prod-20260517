@@ -371,7 +371,12 @@ authRouter.post("/auth/google", async (req, res) => {
       return;
     }
 
-    const info = await resp.json();
+    const info = (await resp.json()) as {
+      email?: string;
+      aud?: string;
+      given_name?: string;
+      name?: string;
+    };
     const email = (info.email || "").toString().trim().toLowerCase();
     if (!email) {
       res.status(400).json({ message: "Google token did not contain an email" });
