@@ -1209,20 +1209,9 @@ export default function Home() {
     let checkoutWindow: Window | null = null;
 
     try {
-      // Open a browser window early so mobile browsers don't block the payment redirect.
-      checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
-      if (checkoutWindow) {
-        checkoutWindow.document.title = "Opening secure checkout...";
-        checkoutWindow.document.body.innerHTML = "<p style='font-family:system-ui;padding:20px'>Opening secure checkout...</p>";
-      }
-
       const config = billingConfig;
 
       if (config && !config.checkoutConfigured) {
-        if (checkoutWindow) {
-          checkoutWindow.close();
-          checkoutWindow = null;
-        }
         const missing = config.checkoutMissing?.length ? ` Missing: ${config.checkoutMissing.join(", ")}.` : "";
         setError(`Checkout is not configured on the server.${missing}`);
         return;
@@ -1237,18 +1226,15 @@ export default function Home() {
 
       const checkout = await withSessionRecovery((authToken) => createUpgradeCheckout(authToken, plan, provider));
       if (checkout.checkoutUrl) {
-        if (checkoutWindow && !checkoutWindow.closed) {
-          checkoutWindow.location.href = checkout.checkoutUrl;
+        // Open in a new tab for the payment flow. If the popup is blocked,
+        // fall back to a same-tab redirect so the user isn't left on a blank page.
+        checkoutWindow = window.open(checkout.checkoutUrl, "_blank");
+        if (checkoutWindow) {
           checkoutWindow.focus();
         } else {
           window.location.href = checkout.checkoutUrl;
         }
         return;
-      }
-
-      if (checkoutWindow) {
-        checkoutWindow.close();
-        checkoutWindow = null;
       }
 
       setStatus("Checkout created, but no redirect URL returned.");
