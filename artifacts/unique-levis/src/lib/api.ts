@@ -435,7 +435,7 @@ export const getBillingConfig = async () => {
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
-    planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
+    planAmounts: { silver: number; gold: number; diamond: number };
     providers?: {
       flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };

@@ -19,7 +19,7 @@ matchesRouter.get("/matches", requireAuth, (req, res) => {
     .map((m) => {
       const otherId = m.userA === me ? m.userB : m.userA;
       const other = findUserById(otherId);
-      if (!other || !canViewProfile(viewer.membershipTier, other.membershipTier)) {
+      if (!other || !canViewProfile(viewer.membershipTier, other.membershipTier, viewer)) {
         return null;
       }
       return {

@@ -37,7 +37,7 @@ const getMessagingAccessIssue = (userId: string, matchId: string) => {
     return { message: "Match user not found", status: 404 as const };
   }
 
-  const accessError = getMessageAccessError(me.membershipTier, other.membershipTier);
+  const accessError = getMessageAccessError(me.membershipTier, other.membershipTier, me);
   if (accessError) {
     return { message: accessError, status: 403 as const };
   }

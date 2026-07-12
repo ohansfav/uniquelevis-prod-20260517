@@ -394,7 +394,7 @@ discoverRouter.get("/discover", requireAuth, (req, res) => {
       (u) =>
         u.id !== authUserId
         && !excluded.has(u.id)
-        && canViewProfile(me.membershipTier, u.membershipTier)
+        && canViewProfile(me.membershipTier, u.membershipTier, me)
         && isDiscoverCompatible(me, u),
     )
     .map((candidate) => {
@@ -471,12 +471,12 @@ discoverRouter.get("/likes/incoming", requireAuth, (req, res) => {
     .filter((item) => !matchedPairs.has([item.byUserId, item.targetUserId].sort().join("::")))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const canViewLikes = canSeeIncomingLikes(me.membershipTier);
+  const canViewLikes = canSeeIncomingLikes(me.membershipTier, me);
   const visibleLikes = canViewLikes
     ? incoming
         .map((item) => {
           const byUser = findUserById(item.byUserId);
-          if (!byUser || !canViewProfile(me.membershipTier, byUser.membershipTier)) {
+          if (!byUser || !canViewProfile(me.membershipTier, byUser.membershipTier, me)) {
             return null;
           }
 
@@ -522,7 +522,7 @@ discoverRouter.post("/interactions/swipe", requireAuth, async (req, res) => {
     return;
   }
 
-  if (!canViewProfile(me.membershipTier, targetUser.membershipTier)) {
+  if (!canViewProfile(me.membershipTier, targetUser.membershipTier, me)) {
     res.status(403).json({ message: "This profile is only visible to higher membership tiers." });
     return;
   }

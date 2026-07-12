@@ -16,7 +16,7 @@ import {
 import { getProfileImage } from "@/lib/image";
 import type { AdminStats, AdminUser, MembershipTier, PaidMembershipTier, VerificationRequest } from "@/lib/types";
 
-const tiers: MembershipTier[] = ["free", "platinum", "silver", "gold", "diamond"];
+const tiers: MembershipTier[] = ["free", "silver", "gold", "diamond"];
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -30,14 +30,14 @@ export default function AdminPage() {
     checkoutConfigured: boolean;
     webhookConfigured: boolean;
     publicKeyConfigured: boolean;
-    planAmounts: { platinum: number; silver: number; gold: number; diamond: number };
+    planAmounts: { silver: number; gold: number; diamond: number };
     providers?: {
       flutterwave: { checkoutConfigured: boolean; missing: string[] };
     };
     missing: string[];
   } | null>(null);
   const [billingTestUserId, setBillingTestUserId] = useState("");
-  const [billingTestTier, setBillingTestTier] = useState<PaidMembershipTier>("platinum");
+  const [billingTestTier, setBillingTestTier] = useState<PaidMembershipTier>("silver");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("God Eyes online. Track users, tiers, and verification decisions.");
@@ -270,7 +270,6 @@ export default function AdminPage() {
               value={billingTestTier}
               onChange={(event) => setBillingTestTier(event.target.value as PaidMembershipTier)}
             >
-              <option value="platinum">Platinum</option>
               <option value="silver">Silver</option>
               <option value="gold">Gold</option>
               <option value="diamond">Diamond</option>
@@ -283,7 +282,7 @@ export default function AdminPage() {
               Run Test Upgrade
             </button>
             <p className="text-[11px] text-slate-400">
-              Amounts (kobo): P {billingConfig?.planAmounts.platinum ?? 0} / S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
+              Amounts (kobo): S {billingConfig?.planAmounts.silver ?? 0} / G {billingConfig?.planAmounts.gold ?? 0} / D {billingConfig?.planAmounts.diamond ?? 0}
             </p>
           </div>
         </section>

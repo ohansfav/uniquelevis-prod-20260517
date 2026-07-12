@@ -1459,7 +1459,6 @@ export default function Home() {
                   <div className="card-marquee gap-3 px-2">
                     {doubled.map((p, i) => (
                       <div key={`${p.name}-${i}`} className="relative mr-3 h-52 w-36 flex-shrink-0 overflow-hidden rounded-2xl border border-white/20 shadow-[0_16px_32px_rgba(0,0,0,0.5)]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={p.src} alt="" className="h-full w-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                         <div className="absolute bottom-2 left-2 text-left">
@@ -1476,7 +1475,6 @@ export default function Home() {
             {/* Desktop: left floating cards */}
             <div className="pointer-events-none absolute left-0 top-[12%] hidden flex-col gap-4 lg:flex" aria-hidden="true">
               <div className="relative h-72 w-48 overflow-hidden rounded-3xl border-2 border-white/20 shadow-[0_24px_50px_rgba(0,0,0,0.5)] rotate-[-5deg] translate-x-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 text-left">
@@ -1485,7 +1483,6 @@ export default function Home() {
                 </div>
               </div>
               <div className="relative h-60 w-44 overflow-hidden rounded-3xl border-2 border-white/15 shadow-[0_20px_40px_rgba(0,0,0,0.45)] rotate-[3deg] translate-x-10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=360&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 text-left">
@@ -1518,27 +1515,30 @@ export default function Home() {
                 >
                   {copy.ctaCreate}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => beginLandingTransition(() => openAuthForm("login"))}
-                  className="tap-feedback w-full rounded-full border border-white/55 bg-white/10 px-9 py-3 text-sm font-semibold text-white backdrop-blur sm:w-auto"
-                >
-                  {copy.ctaExisting}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => beginLandingTransition(() => handleGoogleSignIn())}
-                  className="mt-3 w-full rounded-full border border-white/20 bg-white/8 px-6 py-2 text-sm font-semibold text-white sm:mt-0 sm:ml-3 sm:w-auto"
-                >
-                  Sign in with Google
-                </button>
+                {!isAuthenticated && (
+                  <button
+                    type="button"
+                    onClick={() => beginLandingTransition(() => openAuthForm("login"))}
+                    className="tap-feedback w-full rounded-full border border-white/55 bg-white/10 px-9 py-3 text-sm font-semibold text-white backdrop-blur sm:w-auto"
+                  >
+                    {copy.ctaExisting}
+                  </button>
+                )}
+                {!isAuthenticated && (
+                  <button
+                    type="button"
+                    onClick={() => beginLandingTransition(() => handleGoogleSignIn())}
+                    className="mt-3 w-full rounded-full border border-white/20 bg-white/8 px-6 py-2 text-sm font-semibold text-white sm:mt-0 sm:ml-3 sm:w-auto"
+                  >
+                    Sign in with Google
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Desktop: right floating cards */}
             <div className="pointer-events-none absolute right-0 top-[12%] hidden flex-col gap-4 lg:flex" aria-hidden="true">
               <div className="relative h-72 w-48 overflow-hidden rounded-3xl border-2 border-white/20 shadow-[0_24px_50px_rgba(0,0,0,0.5)] rotate-[5deg] -translate-x-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 text-left">
@@ -1547,7 +1547,6 @@ export default function Home() {
                 </div>
               </div>
               <div className="relative h-60 w-44 overflow-hidden rounded-3xl border-2 border-white/15 shadow-[0_20px_40px_rgba(0,0,0,0.45)] rotate-[-3deg] -translate-x-10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=360&q=60" alt="" className="h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 text-left">
@@ -1901,6 +1900,12 @@ export default function Home() {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">Discover</p>
             <h2 className="text-xl text-[var(--color-primary)] md:text-2xl">Swipe, Explore, Match</h2>
+            {profile?.trialExpiresAt && new Date(profile.trialExpiresAt).getTime() > Date.now() && (
+              <p className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Free trial active — expires {new Date(profile.trialExpiresAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -1909,29 +1914,31 @@ export default function Home() {
             >
               Refresh
             </button>
-            <div className="mt-3 sm:mt-0 sm:ml-3 sm:w-auto flex items-center">
-              <div id="google-btn-landing" className="hidden" />
-              <button
-                type="button"
-                onClick={() => {
-                  const g = (window as any).google;
-                  if (g?.accounts?.id) {
-                    try { g.accounts.id.prompt(); } catch { /* ignore */ }
-                  } else {
-                    void beginLandingTransition(() => handleGoogleSignIn());
-                  }
-                }}
-                className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] hover:brightness-95 shadow-sm"
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
-                  <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
-                  <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
-                  <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
-                </svg>
-                Continue with Google
-              </button>
-            </div>
+            {!isAuthenticated && (
+              <div className="mt-3 sm:mt-0 sm:ml-3 sm:w-auto flex items-center">
+                <div id="google-btn-landing" className="hidden" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const g = (window as any).google;
+                    if (g?.accounts?.id) {
+                      try { g.accounts.id.prompt(); } catch { /* ignore */ }
+                    } else {
+                      void beginLandingTransition(() => handleGoogleSignIn());
+                    }
+                  }}
+                  className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white px-4 py-2 text-sm font-semibold text-[#202124] hover:brightness-95 shadow-sm"
+                >
+                  <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.36 8.26 2.51l6.03-6.03C35.9 3 30.4 1 24 1 14.9 1 6.9 5.6 2.73 13.2l7.67 5.95C12.6 14.1 17.8 9.5 24 9.5z"/>
+                    <path fill="#34A853" d="M46.5 24c0-1.6-.15-2.8-.46-4.06H24v8.06h12.84c-.55 3-2.61 5.5-5.57 7.2l8.69 6.72C43.6 38.2 46.5 31.6 46.5 24z"/>
+                    <path fill="#FBBC05" d="M10.4 29.17A14.9 14.9 0 0 1 9.5 24c0-1.7.3-3.3.9-4.77L2.73 13.2A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.73 10.8l7.67-5.63z"/>
+                    <path fill="#EA4335" d="M24 46.9c6.4 0 11.9-2 16.09-5.38l-8.69-6.72C30.36 33.9 27.54 35 24 35c-6.2 0-11.4-4.6-13.58-10.95l-7.66 5.95C6.9 42.4 14.9 46.9 24 46.9z"/>
+                  </svg>
+                  Continue with Google
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -1998,6 +2005,7 @@ export default function Home() {
               likes={incomingLikes}
               likesUnlocked={likesUnlocked}
               membershipTier={profile?.membershipTier}
+              trialExpiresAt={profile?.trialExpiresAt}
               billingConfig={billingConfig}
               onUpgrade={handleUpgrade}
             />
@@ -2104,6 +2112,7 @@ export default function Home() {
                 likes={incomingLikes}
                 likesUnlocked={likesUnlocked}
                 membershipTier={profile?.membershipTier}
+                trialExpiresAt={profile?.trialExpiresAt}
                 billingConfig={billingConfig}
                 onUpgrade={handleUpgrade}
               />

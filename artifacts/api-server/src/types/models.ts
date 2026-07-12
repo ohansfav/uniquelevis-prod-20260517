@@ -1,4 +1,4 @@
-export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
+export type MembershipTier = "free" | "silver" | "gold" | "diamond";
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
 export type RelationshipIntent = "short-term" | "serious" | "long-term";
 
@@ -18,6 +18,7 @@ export type PublicUser = {
   lookingFor?: "men" | "women" | "everyone";
   datingIntent?: RelationshipIntent;
   membershipTier?: MembershipTier;
+  trialExpiresAt?: string;
   verified?: boolean;
   verificationStatus?: VerificationStatus;
 };

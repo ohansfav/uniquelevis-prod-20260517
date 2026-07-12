@@ -70,7 +70,6 @@ export default function MatchesPanel({ matches, selectedMatchId, onSelectMatch }
                     <span className={`rounded-full px-2 py-px text-[10px] font-bold uppercase tracking-wide ${
                       item.otherUser.membershipTier === "diamond" ? "bg-cyan-400/20 text-cyan-700"
                       : item.otherUser.membershipTier === "gold" ? "bg-amber-400/20 text-amber-800"
-                      : item.otherUser.membershipTier === "platinum" ? "bg-orange-300/20 text-orange-800"
                       : item.otherUser.membershipTier === "silver" ? "bg-slate-300/20 text-slate-700"
                       : "bg-[var(--color-border)] text-[var(--color-text-muted)]"
                     }`}>

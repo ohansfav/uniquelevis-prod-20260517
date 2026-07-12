@@ -89,7 +89,6 @@ export default function ProfileEditor({
   const tierColors: Record<string, string> = {
     diamond: "text-cyan-600 bg-cyan-50 border-cyan-200",
     gold: "text-amber-700 bg-amber-50 border-amber-200",
-    platinum: "text-orange-700 bg-orange-50 border-orange-200",
     silver: "text-slate-700 bg-slate-50 border-slate-200",
     free: "text-gray-600 bg-gray-50 border-gray-200",
   };

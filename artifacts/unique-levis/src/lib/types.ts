@@ -1,4 +1,4 @@
-export type MembershipTier = "free" | "platinum" | "silver" | "gold" | "diamond";
+export type MembershipTier = "free" | "silver" | "gold" | "diamond";
 export type PaidMembershipTier = Exclude<MembershipTier, "free">;
 export type BillingProvider = "flutterwave";
 export type VerificationStatus = "none" | "pending" | "approved" | "rejected";
@@ -19,6 +19,7 @@ export type PublicUser = {
   lookingFor?: "men" | "women" | "everyone";
   datingIntent?: "short-term" | "serious" | "long-term";
   membershipTier?: MembershipTier;
+  trialExpiresAt?: string;
   verified?: boolean;
   verificationStatus?: VerificationStatus;
 };

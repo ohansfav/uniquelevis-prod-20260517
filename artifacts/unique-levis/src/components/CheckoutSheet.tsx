@@ -18,11 +18,6 @@ type Props = {
 };
 
 const planConfig: Record<PaidMembershipTier, { emoji: string; gradient: string; ring: string }> = {
-  platinum: {
-    emoji: "🔥",
-    gradient: "from-orange-400 to-amber-500",
-    ring: "ring-orange-400/40",
-  },
   silver: {
     emoji: "✨",
     gradient: "from-slate-400 to-slate-500",

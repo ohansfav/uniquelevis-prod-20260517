@@ -172,6 +172,7 @@ authRouter.post("/auth/signup", async (req, res) => {
     firstName: parsed.data.firstName?.trim() || "New User",
     age: parsed.data.age ?? 25,
     city: parsed.data.city?.trim() || "",
+    bio: parsed.data.bio,
   });
   const accessToken = signAccessToken(user.id, toSessionProfile(user));
   const refreshToken = signRefreshToken(user.id, toSessionProfile(user));

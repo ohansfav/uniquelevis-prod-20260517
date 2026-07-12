@@ -46,7 +46,6 @@ function SwipeCard({ user, onLike, onSkip, onSuperLike, isBusy = false }: Props)
   const tierColors: Record<string, string> = {
     diamond: "bg-cyan-400/90 text-cyan-950",
     gold:    "bg-amber-400/90 text-amber-950",
-    platinum:"bg-orange-300/90 text-orange-950",
     silver:  "bg-slate-200/90 text-slate-800",
     free:    "bg-white/80 text-gray-900",
   };

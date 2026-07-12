@@ -627,6 +627,7 @@ export const publicUser = (user: UserRecord): PublicUser => ({
   lookingFor: user.lookingFor,
   datingIntent: user.datingIntent ?? "serious",
   membershipTier: user.membershipTier ?? "free",
+  trialExpiresAt: user.trialExpiresAt,
   verified: user.verified ?? false,
   verificationStatus: user.verificationStatus ?? "none",
 });
@@ -699,6 +700,7 @@ export const ensureSessionUser = (userId: string, profile?: SessionProfileClaim)
     photos: profile.photos ?? [],
     datingIntent: profile.datingIntent ?? "serious",
     membershipTier: profile.membershipTier ?? "free",
+    trialExpiresAt: profile.trialExpiresAt,
     verified: profile.verified ?? false,
     verificationStatus: profile.verificationStatus ?? "none",
   };
@@ -729,6 +731,7 @@ export const createUser = async (input: {
   bio?: string;
 }) => {
   const passwordHash = await bcrypt.hash(input.password, 10);
+  const trialExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const record: UserRecord = {
     id: randomUUID(),
     email: input.email,
@@ -741,6 +744,7 @@ export const createUser = async (input: {
     photos: [],
     datingIntent: "serious",
     membershipTier: "free",
+    trialExpiresAt,
     verified: false,
     verificationStatus: "none",
   };

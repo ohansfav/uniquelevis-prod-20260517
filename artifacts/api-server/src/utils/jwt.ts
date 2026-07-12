@@ -15,6 +15,7 @@ export type SessionProfileClaim = {
   photos?: string[];
   datingIntent?: RelationshipIntent;
   membershipTier?: MembershipTier;
+  trialExpiresAt?: string;
   verified?: boolean;
   verificationStatus?: VerificationStatus;
 };

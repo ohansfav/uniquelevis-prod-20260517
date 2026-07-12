@@ -8,11 +8,11 @@ type Props = {
   likes: IncomingLikeItem[];
   likesUnlocked: boolean;
   membershipTier?: MembershipTier;
+  trialExpiresAt?: string;
   billingConfig?: {
     checkoutConfigured?: boolean;
     checkoutMissing?: string[];
     planAmounts?: {
-      platinum: number;
       silver: number;
       gold: number;
       diamond: number;
@@ -25,15 +25,19 @@ type Props = {
 };
 
 const upgradeOptions: CheckoutPlan[] = [
-  { plan: "platinum", label: "Platinum", price: "N500",   accent: "bg-[#ffc38a] text-[#3c2414]", description: "See who liked your profile.", features: ["See exactly who liked you", "Unlimited likes visibility", "Full profile visibility"] },
-  { plan: "silver",   label: "Silver",   price: "N1,000", accent: "bg-[#d8dee8] text-[#233244]", description: "Likes + direct messaging.",  features: ["See who liked you", "Unlimited direct messages", "Full profile visibility"] },
-  { plan: "gold",     label: "Gold",     price: "N3,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Premium gatekeeping + all perks.", features: ["All Silver perks", "Only Gold/Silver can view you", "Only Gold/Silver can message you"] },
-  { plan: "diamond",  label: "Diamond",  price: "N5,000", accent: "bg-[#b8f2e6] text-[#1a3c34]", description: "Elite gatekeeping + full access.", features: ["All Gold perks", "Only Diamond/Gold can view you", "Only Diamond/Gold can message you"] },
+  { plan: "silver",   label: "Silver",   price: "₦500",   accent: "bg-[#d8dee8] text-[#233244]", description: "Likes + direct messaging.",  features: ["See who liked you", "Unlimited direct messages", "Full profile visibility"] },
+  { plan: "gold",     label: "Gold",     price: "₦1,000", accent: "bg-[#f2cb4d] text-[#2b1d0f]", description: "Premium gatekeeping + all perks.", features: ["All Silver perks", "Only Gold/Silver can view you", "Only Gold/Silver can message you"] },
+  { plan: "diamond",  label: "Diamond",  price: "₦1,500", accent: "bg-[#b8f2e6] text-[#1a3c34]", description: "Elite gatekeeping + full access.", features: ["All Gold perks", "Only Diamond/Gold can view you", "Only Diamond/Gold can message you"] },
 ];
+
+const isInTrial = (expiresAt?: string) => {
+  if (!expiresAt) return false;
+  return new Date(expiresAt).getTime() > Date.now();
+};
 
 const formatNaira = (amount: number) => `N${amount.toLocaleString("en-NG")}`;
 
-export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, billingConfig, onUpgrade }: Props) {
+export default function LikesPanel({ likesCount, likes, likesUnlocked, membershipTier, trialExpiresAt, billingConfig, onUpgrade }: Props) {
   const [checkoutPlan, setCheckoutPlan] = useState<CheckoutPlan | null>(null);
   const [upgradingPlan, setUpgradingPlan] = useState<PaidMembershipTier | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
@@ -62,7 +66,10 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
       <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
         <div>
           <h3 className="text-lg font-bold text-[var(--color-primary)]">Who Liked You</h3>
-          <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wide font-semibold">Current plan: {tierLabel}</p>
+          <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wide font-semibold">
+            Current plan: {tierLabel}
+            {isInTrial(trialExpiresAt) && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-700">TRIAL ACTIVE</span>}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 rounded-full romance-gradient px-3 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(255,79,122,0.4)]">
@@ -129,9 +136,15 @@ export default function LikesPanel({ likesCount, likes, likesUnlocked, membershi
               <p className="text-sm font-semibold text-[var(--color-primary)]">
                 {likesCount > 0 ? `${likesCount} people liked you` : "People are waiting to be revealed"}
               </p>
-              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                Upgrade to see exactly who liked you and start conversations first.
-              </p>
+              {isInTrial(trialExpiresAt) ? (
+                <p className="mt-1 text-xs text-emerald-600 font-semibold">
+                  Your free trial is active — unlock likes at no charge for now.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                  Upgrade to see exactly who liked you and start conversations first.
+                </p>
+              )}
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">

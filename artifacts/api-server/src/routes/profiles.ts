@@ -28,7 +28,7 @@ profilesRouter.get("/profiles/:userId", requireAuth, (req, res) => {
     return;
   }
 
-  if (!canViewProfile(viewer.membershipTier, user.membershipTier)) {
+  if (!canViewProfile(viewer.membershipTier, user.membershipTier, viewer)) {
     res.status(403).json({ message: "This profile is only visible to higher membership tiers." });
     return;
   }

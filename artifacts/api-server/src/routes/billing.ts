@@ -9,9 +9,9 @@ export const billingRouter = Router();
 export const billingWebhookRouter = Router();
 
 type PaymentProvider = "flutterwave";
-type PaidPlan = "platinum" | "silver" | "gold" | "diamond";
+type PaidPlan = "silver" | "gold" | "diamond";
 
-const paidPlanSchema = z.enum(["platinum", "silver", "gold", "diamond"]);
+const paidPlanSchema = z.enum(["silver", "gold", "diamond"]);
 const paymentProviderSchema = z.enum(["flutterwave"]);
 const PAYMENT_IDEMPOTENCY_TTL_MS = 1000 * 60 * 60 * 24;
 
@@ -136,7 +136,7 @@ const safeRouteUrl = (path: string) => new URL(path, env.APP_BASE_URL);
 const flutterwaveApiBase = () => (env.FLUTTERWAVE_API_BASE || "https://api.flutterwave.com").replace(/\/$/, "");
 
 const parseReferencePayload = (reference: string) => {
-  const parsed = /^ul_([^_]+)_(platinum|silver|gold|diamond)_\d+$/i.exec(reference);
+  const parsed = /^ul_([^_]+)_(silver|gold|diamond)_\d+$/i.exec(reference);
   if (!parsed) {
     return null;
   }
@@ -145,7 +145,6 @@ const parseReferencePayload = (reference: string) => {
 };
 
 const resolveAmount = (plan: PaidPlan) => {
-  if (plan === "platinum") return env.BILLING_AMOUNT_PLATINUM;
   if (plan === "silver") return env.BILLING_AMOUNT_SILVER;
   if (plan === "gold") return env.BILLING_AMOUNT_GOLD;
   return env.BILLING_AMOUNT_DIAMOND;
@@ -313,7 +312,6 @@ billingRouter.post("/billing/checkout", requireAuth, async (req, res) => {
 
 billingRouter.get("/billing/config", (_req, res) => {
   const planAmounts = {
-    platinum: resolveAmount("platinum"),
     silver: resolveAmount("silver"),
     gold: resolveAmount("gold"),
     diamond: resolveAmount("diamond"),
@@ -324,7 +322,6 @@ billingRouter.get("/billing/config", (_req, res) => {
   if (!flutterwaveSecret && !hasFlutterwaveOAuthCredentials()) {
     checkoutMissing.push("FLUTTERWAVE_SECRET_KEY or (FLUTTERWAVE_CLIENT_ID + FLUTTERWAVE_CLIENT_SECRET)");
   }
-  if (!Number.isFinite(planAmounts.platinum) || planAmounts.platinum <= 0) checkoutMissing.push("BILLING_AMOUNT_PLATINUM");
   if (!Number.isFinite(planAmounts.silver) || planAmounts.silver <= 0) checkoutMissing.push("BILLING_AMOUNT_SILVER");
   if (!Number.isFinite(planAmounts.gold) || planAmounts.gold <= 0) checkoutMissing.push("BILLING_AMOUNT_GOLD");
   if (!Number.isFinite(planAmounts.diamond) || planAmounts.diamond <= 0) checkoutMissing.push("BILLING_AMOUNT_DIAMOND");
@@ -355,7 +352,7 @@ billingRouter.get("/billing/config", (_req, res) => {
 
 const completeUpgradeSchema = z.object({
   userId: z.string().min(1),
-  plan: z.enum(["platinum", "silver", "gold", "diamond"]),
+  plan: z.enum(["silver", "gold", "diamond"]),
   providerToken: z.string().min(1),
 });
 
