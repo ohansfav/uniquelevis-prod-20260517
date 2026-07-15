@@ -1,4 +1,6 @@
 modules = ["nodejs-24", "python-3.11"]
+run = "pnpm run start:replit"
+run = "pnpm run start:replit"
 
 [deployment]
 router = "application"

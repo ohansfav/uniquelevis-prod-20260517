@@ -7,6 +7,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
+      <Route path="/login" component={() => <HomePage initialAuthMode="login" initialShowAuthForm />} />
+      <Route path="/signup" component={() => <HomePage initialAuthMode="signup" initialShowAuthForm />} />
+      <Route path="/signin" component={() => <HomePage initialAuthMode="login" initialShowAuthForm />} />
+      <Route path="/login" component={() => <HomePage initialAuthMode="login" initialShowAuthForm />} />
+      <Route path="/signup" component={() => <HomePage initialAuthMode="signup" initialShowAuthForm />} />
+      <Route path="/signin" component={() => <HomePage initialAuthMode="login" initialShowAuthForm />} />
       <Route path="/messages" component={MessagesPage} />
       <Route path="/admin" component={AdminPage} />
       <Route>

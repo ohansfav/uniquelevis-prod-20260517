@@ -50,3 +50,5 @@ Thumbs.db
 
 # Runtime data (regenerated from seed on first boot; do not commit live state)
 artifacts/api-server/data/store.json
+.vercel
+.env*

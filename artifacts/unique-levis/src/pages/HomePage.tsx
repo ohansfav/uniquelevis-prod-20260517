@@ -244,7 +244,12 @@ const landingCopy: Record<
   },
 };
 
-export default function Home() {
+type HomeProps = {
+  initialAuthMode?: AuthMode;
+  initialShowAuthForm?: boolean;
+};
+
+export default function Home({ initialAuthMode = "login", initialShowAuthForm = false }: HomeProps) {
   type BillingConfigState = Awaited<ReturnType<typeof getBillingConfig>>;
 
   const getOnboardingStorageKey = (userId: string) => `ul_onboarding_complete_${userId}`;
@@ -260,9 +265,9 @@ export default function Home() {
   };
 
   const [authReady, setAuthReady] = useState(false);
-  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(initialShowAuthForm);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [mobileTab, setMobileTab] = useState<MobileTab>("swipe");
   const [swipeOption, setSwipeOption] = useState<SwipeOption>("for-you");
   const [swipeFilters, setSwipeFilters] = useState<SwipeFilters>({
@@ -732,18 +737,28 @@ export default function Home() {
           setSelectedMatchId(parsed.selectedMatchId);
         }
       } catch {
-        // ignore invalid persisted app state
+        localStorage.removeItem("ul_app_state");
       }
     }
 
-    const authModeFromQuery = new URLSearchParams(window.location.search).get("auth");
-    if (authModeFromQuery === "login" || authModeFromQuery === "signup") {
+    const explicitAuthMode = initialAuthMode === "login" || initialAuthMode === "signup";
+    if (explicitAuthMode) {
       if (!savedAccess) {
-        setAuthMode(authModeFromQuery);
-        setShowAuthForm(true);
+        setAuthMode(initialAuthMode);
+        setShowAuthForm(initialShowAuthForm);
       }
       const nextUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, "", nextUrl || "/");
+    } else {
+      const authModeFromQuery = new URLSearchParams(window.location.search).get("auth");
+      if (authModeFromQuery === "login" || authModeFromQuery === "signup") {
+        if (!savedAccess) {
+          setAuthMode(authModeFromQuery);
+          setShowAuthForm(true);
+        }
+        const nextUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, "", nextUrl || "/");
+      }
     }
 
     const pendingTransition = sessionStorage.getItem("ul_transition_pending");
