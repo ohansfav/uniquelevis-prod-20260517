@@ -1,14 +1,9 @@
 {
-  "framework": "vite",
   "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @workspace/unique-levis build",
   "outputDirectory": "dist",
   "routes": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*)",
+      "src": "^/(?!assets).*$",
       "dest": "/index.html"
     }
   ]
