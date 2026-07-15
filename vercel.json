@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd artifacts/unique-levis && pnpm build",
+  "outputDirectory": "artifacts/unique-levis/dist",
+  "routes": [
+    {
+      "src": "^/(?!assets).*$",
+      "dest": "/index.html"
+    }
+  ]
+}
