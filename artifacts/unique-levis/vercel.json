@@ -1,7 +1,7 @@
 {
   "framework": "vite",
   "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @workspace/unique-levis build",
-  "outputDirectory": "artifacts/unique-levis/dist/public",
+  "outputDirectory": "dist/public",
   "rewrites": [
     {
       "source": "/(.*)",
