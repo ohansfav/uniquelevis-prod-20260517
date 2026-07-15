@@ -968,17 +968,8 @@ export default function Home({ initialAuthMode = "login", initialShowAuthForm = 
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    try {
-      // Scaffold: prompt for an ID token for now. Replace with Google
-      // Identity Services flow in production.
-      const idToken = window.prompt("Paste a Google ID token (scaffold).\n(Use Google Identity on client later)");
-      if (!idToken) {
-        setError("No Google ID token provided.");
-        return;
-      }
 
-      const auth = await googleLogin(idToken.trim());
-
+    const finishAuthSuccess = async (auth: any) => {
       setCards([]);
       setIncomingLikes([]);
       setLikesCount(0);
@@ -1002,6 +993,86 @@ export default function Home({ initialAuthMode = "login", initialShowAuthForm = 
       localStorage.setItem("ul_refresh_token", auth.refreshToken);
       setStatus(`Welcome back, ${auth.user.firstName}. Ready for something special?`);
       await bootstrapData(auth.accessToken);
+    };
+
+    try {
+      const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || (window as any).__UL_GOOGLE_CLIENT_ID__;
+
+      // If no client ID is available, fall back to the scaffolded prompt.
+      if (!clientId) {
+        const idToken = window.prompt("Paste a Google ID token (scaffold).\n(Use Google Identity on client later)");
+        if (!idToken) {
+          setError("No Google ID token provided.");
+          return;
+        }
+        const auth = await googleLogin(idToken.trim());
+        await finishAuthSuccess(auth);
+        return;
+      }
+
+      // Load GSI script if not present
+      if (!(window as any).google || !(window as any).google.accounts) {
+        await new Promise<void>((resolve) => {
+          const s = document.createElement("script");
+          s.src = "https://accounts.google.com/gsi/client";
+          s.async = true;
+          s.defer = true;
+          s.onload = () => resolve();
+          s.onerror = () => resolve();
+          document.head.appendChild(s);
+        });
+      }
+
+      // callback to process credential
+      const handleCredentialResponse = async (resp: any) => {
+        try {
+          if (!resp || !resp.credential) {
+            setError("Google did not return a credential.");
+            return;
+          }
+          const auth = await googleLogin(resp.credential);
+          await finishAuthSuccess(auth);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Google sign-in failed");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      try {
+        (window as any).google.accounts.id.initialize({ client_id: clientId, callback: handleCredentialResponse });
+
+        // Render button into known mount points if available
+        const mount = document.getElementById("google-btn-auth") || document.getElementById("google-btn-landing");
+        if (mount && (window as any).google.accounts.id.renderButton) {
+          (window as any).google.accounts.id.renderButton(mount, { theme: "outline", size: "large" });
+          // Optionally show the One Tap prompt
+          try { (window as any).google.accounts.id.prompt(); } catch (_) {}
+        } else {
+          // If there's no mount, show the One Tap / prompt UI
+          try { (window as any).google.accounts.id.prompt(); } catch (_) {
+            // fallback to prompt for ID token
+            const idToken = window.prompt("Paste a Google ID token (scaffold).\n(Use Google Identity on client later)");
+            if (!idToken) {
+              setError("No Google ID token provided.");
+              return;
+            }
+            const auth = await googleLogin(idToken.trim());
+            await finishAuthSuccess(auth);
+            return;
+          }
+        }
+      } catch (e) {
+        // If GSI initialization fails, fall back to prompt
+        const idToken = window.prompt("Paste a Google ID token (scaffold).\n(Use Google Identity on client later)");
+        if (!idToken) {
+          setError("No Google ID token provided.");
+          return;
+        }
+        const auth = await googleLogin(idToken.trim());
+        await finishAuthSuccess(auth);
+        return;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
@@ -1796,6 +1867,9 @@ export default function Home({ initialAuthMode = "login", initialShowAuthForm = 
             </button>
 
             {/* Google */}
+            {/* Mount point for Google Identity Services button (GSI) */}
+            <div id="google-btn-auth" className="w-full" />
+
             <button
               type="button"
               onClick={() => {
