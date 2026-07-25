@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "id": "u-admin",
+      "email": "admin@uniquelevis.com",
+      "passwordHash": "$2a$10$5eJxUcvXlY8YOGAUr2e.1.wz3ayuGoIuX23yooaTBpQnqibrgj4Ue",
+      "firstName": "Platform Admin",
+      "age": 30,
+      "city": "Lagos",
+      "bio": "Full-access platform administrator",
+      "interests": [],
+      "photos": [],
+      "isAdmin": true,
+      "membershipTier": "diamond",
+      "verified": true,
+      "verificationStatus": "approved",
+      "datingIntent": "serious"
+    }
+  ],
+  "likes": [],
+  "matches": [],
+  "messages": [],
+  "refreshSessions": []
+}
