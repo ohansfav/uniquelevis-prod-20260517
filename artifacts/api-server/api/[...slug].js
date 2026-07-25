@@ -1,8 +1,3 @@
-import app from '../dist/index.mjs';
+import handler from './index.js';
 
-export default function handler(req, res) {
-  if (typeof req.url === 'string' && req.url.startsWith('/api')) {
-    req.url = req.url.replace(/^\/api/, '') || '/';
-  }
-  return app(req, res);
-}
+export default handler;
