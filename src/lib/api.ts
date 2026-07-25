@@ -16,8 +16,13 @@ import type {
 } from "./types";
 
 // Use same-origin /api by default so the frontend can call the local API function.
-// This avoids relying on a separate Vercel API deployment.
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+// In production, if the frontend is deployed to uniquelevis.vercel.app, prefer the
+// dedicated API deployment to avoid Vercel SPA rewrite interfering with /api.
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (typeof window !== "undefined" && window.location.hostname === "uniquelevis.vercel.app"
+    ? "https://uniquelevis-api.vercel.app/api"
+    : "/api");
 
 export type DiscoverQueryFilters = {
   mode?: "for-you" | "nearby" | "passport" | "boost";
