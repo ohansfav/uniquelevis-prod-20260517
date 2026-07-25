@@ -3,6 +3,14 @@
   "outputDirectory": "artifacts/unique-levis/dist",
   "routes": [
     {
+      "src": "^/api/(.*)$",
+      "dest": "https://uniquelevis-api.vercel.app/api/$1"
+    },
+    {
+      "src": "^/api$",
+      "dest": "https://uniquelevis-api.vercel.app/api"
+    },
+    {
       "src": "^/(?!assets).*$",
       "dest": "/index.html"
     }
